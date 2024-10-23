@@ -44,7 +44,7 @@ Convert COLMAP version of camera parameters to NeRF version of camera parameters
 export PYTHONPATH=<.....>/fs4dgs 
 python scripts/pre_technicolor/imgs2poses.py --match_type exhaustive_matcher --scenedir <location>/<scene>
 ```
-流程十分繁长，我不装了，直接中文。接下来得到训练集和测试集的相机信息(.json文件)：
+接下来得到训练集和测试集的相机信息(.json文件)：
 ```
 python scripts/pre_technicolor/pose2MVS.py --path <location>/<scene>
 ```
