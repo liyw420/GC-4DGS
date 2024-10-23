@@ -1,4 +1,4 @@
-name: fudan4dgs
+name: fs4dgs
 channels:
   - pytorch
   - conda-forge

@@ -363,13 +363,16 @@ def getcolmapsingletechni(folder, offset):
 
 
     files = os.listdir(folder + "/sparse")
-    os.makedirs(folder + "/sparse/0", exist_ok=True)
+    # os.makedirs(folder + "/sparse/0", exist_ok=True)
+    destination_file = os.path.join(os.path.dirname(folder), "sparse", "0")
+    os.makedirs(destination_file)
     for file in files:
         if file == '0':
             continue
         source_file = os.path.join(folder, "sparse", file)
-        destination_file = os.path.join(folder, "sparse", "0", file)
-        shutil.move(source_file, destination_file)
+        # destination_file = os.path.join(folder, "sparse", "0", file)
+        shutil.move(source_file, os.path.join(destination_file, file))
+    shutil.rmtree(folder)
     
     return 
     

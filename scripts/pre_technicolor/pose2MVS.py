@@ -222,7 +222,7 @@ def rotmat(a, b):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser() 
-    parser.add_argument("path", default="", help="input path to the video")
+    parser.add_argument("--path", default="", help="input path to the video")
     args = parser.parse_args()
 
     # path must end with / to make sure image path is relative
@@ -295,8 +295,8 @@ if __name__ == '__main__':
             test_info += cam_info
             # train_info += cam_info
 
-        else:                                            
-        # elif i == 2 or i == 8 or i == 15:                                                 # Technicolor Dataset 训练的三个视角，cam02, cam08, cam15                            
+        # else:                                            
+        elif i == 2 or i == 8 or i == 15:                                                 # Technicolor Dataset 训练的三个视角，cam02, cam08, cam15                            
             train_info += cam_info
 
     train_transforms = {

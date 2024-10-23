@@ -263,8 +263,9 @@ if __name__ == '__main__':
 
         for time in time_stamp:
             cam_infos = [cam for cam in train_cam_infos if cam.timestamp == time]
-            mvs_idx = [2, 8, 15] # Technicolor train cam 02, 08, 15
-            mvs_cam = [c for idx, c in enumerate(cam_infos) if idx in mvs_idx]
+            # mvs_idx = [2, 8, 15] # Technicolor train cam 02, 08, 15
+            # mvs_cam = [c for idx, c in enumerate(cam_infos) if idx in mvs_idx]
+            mvs_cam = [c for idx, c in enumerate(cam_infos)]
             
             print('Predicting MVS depth...')
             mvs_estimator = MvsEstimator(args.mvs_config)
