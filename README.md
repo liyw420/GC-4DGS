@@ -61,7 +61,7 @@ python scripts/pre_technicolor/o3dPre.py ----mvs_input <location>/<scene>/mvs --
 **Dynerf Dataset**: Neural 3D Video Synthesis from Multi-view Video, CVPR 2022. </br>
 **Technicolor Dataset**: Dataset and Pipeline for Multi-View Light-Field Video, CVPR 2017 Workshop. </br>
 **Google Immersive Dataset**: Immersive Light Field Video with a Layered Mesh Representation, SIGGRAPH 2020. </br>
-**Meet Room Dataset**: Streaming Radiance Fields for 3D Video Synthesis, Nips 2022. </br>
+**Meet Room Dataset**: Streaming Radiance Fields for 3D Video Synthesis, NeurIPS 2022. </br>
 
 ### Dynamic View Synthesis Using Gaussian Splatting
 **RealTime4DGS**: Real-time Photorealistic Dynamic Scene Representation and Rendering with 4D Gaussian Splatting, ICLR 2024. </br>
