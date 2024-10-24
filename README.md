@@ -10,7 +10,7 @@ The hardware and software requirements are the same as those of the [3D Gaussian
 
 ```shell
 git clone https://github.com/liyw420/FS4DGS
-cd fs4dgs
+cd FS4DGS
 conda env create --file environment4dgs.yml
 conda activate fs4dgs
 ```
@@ -41,14 +41,18 @@ python scripts/pre_technicolor/pre_technicolor.py --videopath <location>/<scene>
 ```
 Convert COLMAP version of camera parameters to NeRF version of camera parameters (obtain poses_bounds.npy). </br> Before this, set PYTHONPATH, otherwise errors will occur, hope to fix it in the future
 ```
-export PYTHONPATH=<.....>/fs4dgs 
+export PYTHONPATH=<.....>/FS4DGS 
 python scripts/pre_technicolor/imgs2poses.py --match_type exhaustive_matcher --scenedir <location>/<scene>
 ```
 接下来得到训练集和测试集的相机信息(.json文件)：
 ```
 python scripts/pre_technicolor/pose2MVS.py --path <location>/<scene>
 ```
-然后利用MVSFormer得到点云以及深度数据和mask
+Download the [pre-trained model](https://onedrive.live.com/?redeem=aHR0cHM6Ly8xZHJ2Lm1zL3UvcyFBaDJWa1VMbWtpcVByeUhfVGwyUFVTNklzODMxP2U9QmdDdU9Z&id=8F2A92E64291951D%216049&cid=8F2A92E64291951D) of MVSFormer (only MVSFormer.zip and MVSFormer-Blended.zip are enough). Then unzip them and put them in this directory: 
+```
+<.....>/FS4DGS/mvs_modules/pretrained/<.....>
+```
+Then use MVSFormer to obtain the point clouds, depthmaps, and maskmaps.
 ```
 python mvs2points.py --path <location>/<scene> --mvs_config <.....>/fs4dgs/mvs_modules/configs/config_mvsformer.json --dataset technicolor
 ```
