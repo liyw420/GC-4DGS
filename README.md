@@ -52,10 +52,37 @@ python scripts/pre_technicolor/pose2MVS.py --path <location>/<scene>
 ```
 python mvs2points.py --path <location>/<scene> --mvs_config <.....>/fs4dgs/mvs_modules/configs/config_mvsformer.json --dataset technicolor
 ```
-自己写了个脚本，基于open3d库对MVS得到的点云进行噪点过滤并降采样
+基于open3d库对MVS得到的点云进行噪点过滤并降采样
 ```
 python scripts/pre_technicolor/o3dPre.py ----mvs_input <location>/<scene>/mvs --downsampling_rate 0.1 --output_path <location>/<scene>
 ```
+## Key References
+### Dataset
+**Dynerf Dataset**: Neural 3D Video Synthesis from Multi-view Video, CVPR 2022. </br>
+**Technicolor Dataset**: Dataset and Pipeline for Multi-View Light-Field Video, CVPR 2017 Workshop. </br>
+**Google Immersive Dataset**: Immersive Light Field Video with a Layered Mesh Representation, SIGGRAPH 2020. </br>
+**Meet Room Dataset**: Streaming Radiance Fields for 3D Video Synthesis, Nips 2022. </br>
+
+### Dynamic View Synthesis Using Gaussian Splatting
+**RealTime4DGS (fudan4DGS)**: Real-time Photorealistic Dynamic Scene Representation and Rendering with 4D Gaussian Splatting, ICLR 2024. </br>
+**SpaceTimeGS**: Spacetime Gaussian Feature Splatting for Real-Time Dynamic View Synthesis, CVPR 2024. </br>
+**E-D3DGS**: Per-Gaussian Embedding-Based Deformation for Deformable 3D Gaussian Splatting, ECCV 2024. </br>
+**4DGS**: 4D Gaussian Splatting for Real-Time Dynamic Scene Rendering, CVPR 2024. </br>
+**4D-Rotor-GS**: 4D-Rotor Gaussian Splatting: Towards Efficient Novel View Synthesis for Dynamic Scenes, SIGGRRAPH 2024.
+
+### Few-shot Novel View Synthesis Using Gaussian SPlatting
+**FSGS**: FSGS: Real-Time Few-shot View Synthesis using Gaussian Splatting, ECCV 2024. </br>
+**DNGS**: DNGaussian: Optimizing Sparse-View 3D Gaussian Radiance Fields with Global-Local Depth Normalization, CVPR 2024. </br>
+**MVPGS**: MVPGS: Excavating Multi-view Priors for Gaussian Splatting from Sparse Input Views, ECCV 2024. </br>
+**MVSGaussian**: MVSGaussian: Fast Generalizable Gaussian Splatting Reconstruction from Multi-View Stereo, ECCV 2024. </br>
+**InstantSplat**: InstantSplat: Sparse-view SfM-free Gaussian Splatting in Seconds, arxiv. </br>
+**GaussianObject**: GaussianObject: High-Quality 3D Object Reconstruction from Four Views with Gaussian Splatting, SIGGRAPH Asia 2024. </br>
+
+### Learning-based Multi-view Stereo
+**MVSFormer**: MVSFormer: Multi-View Stereo by Learning Robust Image Features and Temperature-based Depth, TMLR 2023. </br>
+**MVSFormer++**: MVSFormer++: Revealing the Devil in Transformer’s Details for Multi-View Stereo, ICLR 2024. </br>
+**DUSt3R**: DUSt3R: Geometric 3D Vision Made Easy, CVPR 2024. </br>
+**MASt3R**: Grounding Image Matching in 3D with MASt3R,arxiv. </br>
 
 
 
