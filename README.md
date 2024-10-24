@@ -44,7 +44,7 @@ Convert COLMAP version of camera parameters to NeRF version of camera parameters
 export PYTHONPATH=<.....>/FS4DGS 
 python scripts/pre_technicolor/imgs2poses.py --match_type exhaustive_matcher --scenedir <location>/<scene>
 ```
-接下来得到训练集和测试集的相机信息(.json文件)：
+Then obtain the camera information of both training set and testing test (transforms_test.json & transforms_train.json):
 ```
 python scripts/pre_technicolor/pose2MVS.py --path <location>/<scene>
 ```
@@ -56,7 +56,7 @@ Then use MVSFormer to obtain the point clouds, depthmaps, and maskmaps.
 ```
 python mvs2points.py --path <location>/<scene> --mvs_config <.....>/fs4dgs/mvs_modules/configs/config_mvsformer.json --dataset technicolor
 ```
-基于open3d库对MVS得到的点云进行噪点过滤并降采样
+Point cloud downsampling and outlier filtering.
 ```
 python scripts/pre_technicolor/o3dPre.py ----mvs_input <location>/<scene>/mvs --downsampling_rate 0.1 --output_path <location>/<scene>
 ```
