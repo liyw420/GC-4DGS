@@ -70,7 +70,7 @@ python scripts/pre_technicolor/o3dPre.py ----mvs_input <location>/<scene>/mvs --
 **4DGS**: 4D Gaussian Splatting for Real-Time Dynamic Scene Rendering, CVPR 2024. </br>
 **4D-Rotor-GS**: 4D-Rotor Gaussian Splatting: Towards Efficient Novel View Synthesis for Dynamic Scenes, SIGGRRAPH 2024.
 
-### Few-shot Novel View Synthesis Using Gaussian SPlatting
+### Few-shot Novel View Synthesis Using Gaussian Splatting
 **FSGS**: FSGS: Real-Time Few-shot View Synthesis using Gaussian Splatting, ECCV 2024. </br>
 **DNGS**: DNGaussian: Optimizing Sparse-View 3D Gaussian Radiance Fields with Global-Local Depth Normalization, CVPR 2024. </br>
 **MVPGS**: MVPGS: Excavating Multi-view Priors for Gaussian Splatting from Sparse Input Views, ECCV 2024. </br>
