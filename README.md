@@ -64,7 +64,7 @@ python scripts/pre_technicolor/o3dPre.py ----mvs_input <location>/<scene>/mvs --
 **Meet Room Dataset**: Streaming Radiance Fields for 3D Video Synthesis, Nips 2022. </br>
 
 ### Dynamic View Synthesis Using Gaussian Splatting
-**RealTime4DGS (fudan4DGS)**: Real-time Photorealistic Dynamic Scene Representation and Rendering with 4D Gaussian Splatting, ICLR 2024. </br>
+**RealTime4DGS**: Real-time Photorealistic Dynamic Scene Representation and Rendering with 4D Gaussian Splatting, ICLR 2024. </br>
 **SpaceTimeGS**: Spacetime Gaussian Feature Splatting for Real-Time Dynamic View Synthesis, CVPR 2024. </br>
 **E-D3DGS**: Per-Gaussian Embedding-Based Deformation for Deformable 3D Gaussian Splatting, ECCV 2024. </br>
 **4DGS**: 4D Gaussian Splatting for Real-Time Dynamic Scene Rendering, CVPR 2024. </br>
