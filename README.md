@@ -64,7 +64,14 @@ Training on technicolor dataset:
 ```
 python train.py --config configs/lightfield/birthday_MVS.yaml
 ```
-
+Rendering on technicolor dataset:
+```
+python render.py --model_path output/lightfield/Birthday/ --loaded_pth output/lightfield/Birthday/chkpnt_best.pth
+```
+Evaluation on technicolor dataset:
+```
+python metrics.py --model_path output/lightfield/Birthday/
+```
 
 ## Key References
 ### Dataset
