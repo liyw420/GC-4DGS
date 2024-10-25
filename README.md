@@ -60,6 +60,12 @@ Point cloud downsampling and outlier filtering.
 ```
 python scripts/pre_technicolor/o3dPre.py ----mvs_input <location>/<scene>/mvs --downsampling_rate 0.1 --output_path <location>/<scene>
 ```
+Training on technicolor dataset:
+```
+python train.py --config configs/lightfield/birthday_MVS.yaml
+```
+
+
 ## Key References
 ### Dataset
 **Dynerf Dataset**: Neural 3D Video Synthesis from Multi-view Video, CVPR 2022. </br>
