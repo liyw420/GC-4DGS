@@ -258,7 +258,8 @@ def getcolmapsingleimundistort(folder, offset):
 
 def getcolmapsingleimdistort(folder, offset):
     
-    folder = os.path.join(folder, "colmap_" + str(offset))
+    folder = os.path.join(folder, "colmap")
+    # folder = os.path.join(folder, "colmap_" + str(offset))
     assert os.path.exists(folder)
 
     dbfile = os.path.join(folder, "input.db")
@@ -306,12 +307,19 @@ def getcolmapsingleimdistort(folder, offset):
         exit(exit_code)
 
     files = os.listdir(folder + "/sparse")
+
+    parent_dir = os.path.dirname(os.path.dirname(folder))
+    new_subdir = os.path.basename(os.path.dirname(folder)).replace('_dist', '')
+    new_path = os.path.join(parent_dir, new_subdir)
+    os.makedirs(new_path + "/sparse/0", exist_ok=True)
+
     os.makedirs(folder + "/sparse/0", exist_ok=True)
     for file in files:
         if file == '0':
             continue
         source_file = os.path.join(folder, "sparse", file)
-        destination_file = os.path.join(folder, "sparse", "0", file)
+        # destination_file = os.path.join(folder, "sparse", "0", file)
+        destination_file = os.path.join(new_path, "sparse", "0", file)
         shutil.move(source_file, destination_file)
         
 

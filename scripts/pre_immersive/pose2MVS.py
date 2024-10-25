@@ -10,6 +10,7 @@ import math
 import shutil
 import sqlite3
 import csv
+from utils.read_write_model import read_model, write_model
 
 
 IS_PYTHON3 = sys.version_info[0] >= 3
@@ -231,12 +232,17 @@ if __name__ == '__main__':
         
     # extract images
     videos = [os.path.join(args.path, vname) for vname in os.listdir(args.path) if vname.endswith(".mp4")]
-    images_path = os.path.join(args.path, "images/")
+    images_path = os.path.join(args.path, "images_undistorted/")
     os.makedirs(images_path, exist_ok=True)
     
+    # obtain camerea.txt
+    bin_path = os.path.join(args.path, "sparse", "0")
+    cameras, images, points3D = read_model(bin_path, ".bin")
+    write_model(cameras, images, points3D, args.path, ".txt")
+    
     # load image
-    images = [f[len(args.path):] for f in sorted(glob.glob(os.path.join(args.path, "images/", "*"))) if f.lower().endswith('png') or f.lower().endswith('jpg') or f.lower().endswith('jpeg')]
-    cams = sorted(set([im[7:12] for im in images]))
+    images = [f[len(args.path):] for f in sorted(glob.glob(os.path.join(args.path, "images_undistorted/", "*"))) if f.lower().endswith('png') or f.lower().endswith('jpg') or f.lower().endswith('jpeg')]
+    cams = sorted(set([im[-13:-9] for im in images]))
 
     # load poses and bounds
     poses_bounds = np.load(os.path.join(args.path, 'poses_bounds.npy')) # poses_bounds.npy文件保存相机位姿信息，N×17的矩阵，前面15个参数可以重排成3x5的矩阵形式：左边3x3矩阵是c2w的旋转矩阵R，第四列是c2w的平移向量T，前四列相当于相机外参；第五列分别是图像的高H、宽W和相机的焦距f（相机内参）（这部分是前15个参数）
@@ -260,18 +266,15 @@ if __name__ == '__main__':
     # load camera intrinsics
     fx, fy, cx, cy = [], [], [], []
     
-    with open(os.path.join(args.path, "cameras_parameters.txt"), "r") as f:
+    with open(os.path.join(args.path, "cameras.txt"), "r") as f:
             reader = csv.reader(f, delimiter=" ")
             for idx, row in enumerate(reader):
-                if idx == 0:
+                if idx in (0,1,2):
                     continue
-                idx = idx - 1
-                row = [float(c) for c in row if c.strip() != '']
-
-                fx.append(row[0])  
-                fy.append(row[0]) 
-                cx.append(row[1]) 
-                cy.append(row[2])
+                fx.append(row[4])  
+                fy.append(row[5]) 
+                cx.append(row[6]) 
+                cy.append(row[7])
     
     train_info = []
     test_info = []
@@ -291,12 +294,12 @@ if __name__ == '__main__':
                         'time': int(im.lstrip("/").split('.')[0][-4:]) / 30,                 # 调整每帧图片对应的时间戳
                         'bounds': bounds[i].tolist()} for im in images if cams[i] in im]     # 添加一组参数bounds,为图像的最大最小深度值，用于计算相机的视锥体
 
-        if i == 10:                                                                         # Technicolor Dataset 测试的视角，cam10 
+        if i == 0:                                                                         # Immersive Dataset 测试的视角，cam1
             test_info += cam_info
             # train_info += cam_info
 
         # else:                                            
-        elif i == 2 or i == 8 or i == 15:                                                 # Technicolor Dataset 训练的三个视角，cam02, cam08, cam15                            
+        elif i % 2 == 0 :                                                                    # Immersive Dataset 训练的视角                           
             train_info += cam_info
 
     train_transforms = {
@@ -326,7 +329,7 @@ if __name__ == '__main__':
     #     for i in range(N):
     #         # f.write(f'{i+1} PINHOLE {W} {H} {fx[i]} {fy[i]} {cx[i]} {cy[i]} \n')
             
-    #         if i == 2 or i == 8 or i == 15:
+    #         if i % 2 == 0 and i != 0:
                 
     #             f.write(f'{j} PINHOLE {W} {H} {fx[i]} {fy[i]} {cx[i]} {cy[i]} \n')
     #             j += 1

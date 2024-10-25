@@ -61,7 +61,6 @@ def loadCam(args, id, cam_info, resolution_scale):
     if cam_info.depth is not None:
         depth = PILtoTorch(cam_info.depth, resolution) * 255 / 10000
     else:
-        # depth = estimate_depth(gt_image.cuda()).cpu().numpy()                                   # 这行代码是额外添加的，用于估计深度图
         depth = None
 
     return Camera(colmap_id=cam_info.uid, R=cam_info.R, T=cam_info.T,                           # Camera类的属性

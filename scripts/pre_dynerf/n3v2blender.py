@@ -231,9 +231,9 @@ if __name__ == '__main__':
     images_path = os.path.join(args.path, "images/")
     os.makedirs(images_path, exist_ok=True)
     
-    # for video in videos:
-    #     cam_name = video.split('/')[-1].split('.')[-2]
-    #     do_system(f"ffmpeg -i {video} -vf scale=iw/2:ih/2 -t 10 -start_number 0 {images_path}/{cam_name}_%04d.png")  # 提取视频中的图片
+    for video in videos:
+        cam_name = video.split('/')[-1].split('.')[-2]
+        do_system(f"ffmpeg -i {video} -vf scale=iw/2:ih/2 -t 10 -start_number 0 {images_path}/{cam_name}_%04d.png")  # 提取视频中的图片
     # 为了降低def3dgs算法内存，将图片缩放为原来的1/2, 对应命令为 -vf scale=iw/2:ih/2
     # load data
     images = [f[len(args.path):] for f in sorted(glob.glob(os.path.join(args.path, "images/", "*"))) if f.lower().endswith('png') or f.lower().endswith('jpg') or f.lower().endswith('jpeg')]
