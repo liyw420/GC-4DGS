@@ -78,7 +78,7 @@ Git clone the repository of [DepthAnythingV2 (DV2)](https://github.com/DepthAnyt
 ```
 <.....>/FS4DGS/utils/DV2/<.....>
 ```
-Use the metrics-depth version of DV2, download the checkpoints [here](https://github.com/DepthAnything/Depth-Anything-V2/tree/31dc97708961675ce6b3a8d8ffa729170a4aa273/metric_depth), choosing the Large one, training on Indoor(Hypersim). The following code, named **DV2run.py** should replace **<.....>/DV2/metric_depth/run.py**:
+Use the metrics-depth version of DV2, download the checkpoints [here](https://github.com/DepthAnything/Depth-Anything-V2/tree/31dc97708961675ce6b3a8d8ffa729170a4aa273/metric_depth), choosing **Depth-Anything-V2-Large**, training on **Indoor(Hypersim)**. The following code, named **DV2run.py** should replace the original **<.....>/DV2/metric_depth/run.py**:
 ```
 import argparse
 import cv2
@@ -171,7 +171,7 @@ if __name__ == '__main__':
 ```
 Then run **DV2run.py** to obtain the depthmaps and depth.npy of the input images
 ```
-python <.....>/FS4DGS/utils/DV2/metric_depth/DV2run.py --encoder vitl --load-from <.....>/FS4DGS/utils/DV2/metric_depth/checkpoints/depth_anything_v2_metric_hypersim_vitl.pth --max-depth 3.6 --img-path <location>/<scene>/images --outdir --img-path <location>/<scene>/depths --input-size 1000 --pred-only --save-numpy
+python <.....>/FS4DGS/utils/DV2/metric_depth/DV2run.py --encoder vitl --load-from <.....>/FS4DGS/utils/DV2/metric_depth/checkpoints/depth_anything_v2_metric_hypersim_vitl.pth --max-depth 3.6 --img-path <location>/<scene>/images --outdir <location>/<scene>/depths --input-size 1000 --pred-only --save-numpy
  
 ```
 ## Key References
