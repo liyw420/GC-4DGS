@@ -15,6 +15,7 @@ import random
 import torch
 from torch import nn
 import torchvision
+from lpipsPyTorch import lpips
 import torch.nn.functional as F
 from utils.loss_utils import l1_loss, l2_loss, ssim, msssim, loss_depth_smoothness, patch_norm_mse_loss, smooth_l1_loss
 from utils.depth_utils import estimate_depth_MiDas, estimate_depth_DV2
@@ -34,6 +35,9 @@ from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from torch.utils.data import DataLoader
 from torchmetrics.functional.regression import pearson_corrcoef
+import time
+
+# import torch.multiprocessing as mp
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -83,7 +87,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     gaussians.env_map = env_map
         
     training_dataset = scene.getTrainCameras()  # 创建训练集对象和训练数据加载器
-    training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=12 if dataset.dataloader else 0, collate_fn=lambda x: x, drop_last=True)
+    training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=12 if dataset.dataloader else 0, collate_fn=lambda x: x, drop_last=True, persistent_workers=True)
      
     iteration = first_iter
     pseudo_stack = None
@@ -119,60 +123,60 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 
                 # Image Loss
                 Ll1 = l1_loss(image, gt_image)
-                Lssim = 1.0 - ssim(image, gt_image)                                 # 显存会发生变化
+                Lssim = 1.0 - ssim(image, gt_image)
                 loss = (1.0 - opt.lambda_dssim) * Ll1 + opt.lambda_dssim * Lssim
 
-                # # depth loss: A. pearson_loss; B. l1_loss; C. global ordinal_loss; D. local patch loss; E. mvs depth loss; F. pseudo_view depth loss
-                # rendered_depth = render_pkg["depth"][0]
-                # norm_depth = (rendered_depth - rendered_depth.min()) / (rendered_depth.max() - rendered_depth.min())
-                # dv2_depth = gt_image_and_depth[1].cuda()
+                # depth loss: A. pearson_loss; B. l1_loss; C. global ordinal_loss; D. local patch loss; E. mvs depth loss; F. pseudo_view depth loss
+                rendered_depth = render_pkg["depth"][0]
+                norm_depth = (rendered_depth - rendered_depth.min()) / (rendered_depth.max() - rendered_depth.min())
+                dv2_depth = gt_image_and_depth[1].cuda()    
                 
-                # # # A. pearson_loss
-                # # depth = depth.reshape(-1, 1).squeeze(-1)
-                # # gt_depth = gt_depth.reshape(-1, 1).squeeze(-1)
-                # # depth_loss = (1 - pearson_corrcoef(gt_depth, depth))
+                # # A. pearson_loss
+                # depth = depth.reshape(-1, 1).squeeze(-1)
+                # gt_depth = gt_depth.reshape(-1, 1).squeeze(-1)
+                # depth_loss = (1 - pearson_corrcoef(gt_depth, depth))
                 
-                # # # B. l1_loss
-                # # depth_loss = 0.1 * l1_loss(depth, gt_depth)
+                # # B. l1_loss
+                # depth_loss = 0.1 * l1_loss(depth, gt_depth)
 
-                # # C. global ordinal_loss
-                # w, h = norm_depth.shape[1], norm_depth.shape[0]
-                # base_tensor = torch.arange(0, w * h)
-                # num_pairs = 2_200_000   # 1_300_000 dynerf dataset
-                # if num_pairs > 2_200_000:
-                #     random_indices_1 = torch.stack((torch.randperm(w * h)[:1_300_000], torch.randperm(w * h)[:1_300_000]), dim = 1)
-                #     random_indices_2 = torch.stack((torch.randperm(w * h)[:(num_pairs - 1_300_000)], torch.randperm(w * h)[:(num_pairs - 1_300_000)]), dim = 1)
-                #     random_pairs = torch.cat((base_tensor[random_indices_1], base_tensor[random_indices_2]), dim=0)
+                # C. global ordinal_loss
+                w, h = norm_depth.shape[1], norm_depth.shape[0]
+                base_tensor = torch.arange(0, w * h)
+                num_pairs = 550000   # 1_300_000 dynerf dataset
+                if num_pairs > 550000:
+                    random_indices_1 = torch.stack((torch.randperm(w * h)[:1_300_000], torch.randperm(w * h)[:1_300_000]), dim = 1)
+                    random_indices_2 = torch.stack((torch.randperm(w * h)[:(num_pairs - 1_300_000)], torch.randperm(w * h)[:(num_pairs - 1_300_000)]), dim = 1)
+                    random_pairs = torch.cat((base_tensor[random_indices_1], base_tensor[random_indices_2]), dim=0)
                 
-                # else:
-                #     random_indices = torch.stack((torch.randperm(w * h)[:num_pairs], torch.randperm(w * h)[:num_pairs]), dim = 1)
-                #     random_pairs = base_tensor[random_indices]
+                else:
+                    random_indices = torch.stack((torch.randperm(w * h)[:num_pairs], torch.randperm(w * h)[:num_pairs]), dim = 1)
+                    random_pairs = base_tensor[random_indices]
                 
-                # depth_pixel_1 = torch.stack((torch.div(random_pairs[:, 0], w, rounding_mode='trunc'), random_pairs[:, 0] % w), dim = 1)
-                # depth_pixel_2 = torch.stack((torch.div(random_pairs[:, 0], w, rounding_mode='trunc'), random_pairs[:, 1] % w), dim = 1)
+                depth_pixel_1 = torch.stack((torch.div(random_pairs[:, 0], w, rounding_mode='trunc'), random_pairs[:, 0] % w), dim = 1)
+                depth_pixel_2 = torch.stack((torch.div(random_pairs[:, 0], w, rounding_mode='trunc'), random_pairs[:, 1] % w), dim = 1)
                 
-                # depth_1 = norm_depth[depth_pixel_1[:, 0], depth_pixel_1[:, 1]]
-                # depth_2 = norm_depth[depth_pixel_2[:, 0], depth_pixel_2[:, 1]]
-                # gt_depth_1 = dv2_depth[depth_pixel_1[:, 0], depth_pixel_1[:, 1]]
-                # gt_depth_2 = dv2_depth[depth_pixel_2[:, 0], depth_pixel_2[:, 1]]
+                depth_1 = norm_depth[depth_pixel_1[:, 0], depth_pixel_1[:, 1]]
+                depth_2 = norm_depth[depth_pixel_2[:, 0], depth_pixel_2[:, 1]]
+                gt_depth_1 = dv2_depth[depth_pixel_1[:, 0], depth_pixel_1[:, 1]]
+                gt_depth_2 = dv2_depth[depth_pixel_2[:, 0], depth_pixel_2[:, 1]]
                 
-                # para = 1_000_000 
-                # depth_loss_ordinal  = 0.05 * l1_loss(torch.tanh(para * (depth_1 - depth_2)), torch.sign(gt_depth_1 - gt_depth_2))
+                para = 1_000_000 
+                depth_loss_ordinal  = 0.02 * l1_loss(torch.tanh(para * (depth_1 - depth_2)), torch.sign(gt_depth_1 - gt_depth_2))
 
-                # loss += depth_loss_ordinal
+                loss += depth_loss_ordinal
 
-                # # D. local patch loss
-                # depth_loss_patch = patch_norm_mse_loss(norm_depth[None, None, ...], dv2_depth[None, None, ...], 16, 0.0002)
-                # loss += 0.1 * depth_loss_patch
+                # D. local patch loss
+                depth_loss_patch = patch_norm_mse_loss(norm_depth[None, None, ...], dv2_depth[None, None, ...], 16, 0.0002)
+                loss += 0.02 * depth_loss_patch
 
-                # # if iteration > 3000:
-                # #     loss += 0.02 * loss_depth_smoothness(norm_depth[None, None, ...], dv2_depth[None, None, ...])
+                # if iteration > 3000:
+                #     loss += 0.02 * loss_depth_smoothness(norm_depth[None, None, ...], dv2_depth[None, None, ...])
                 
                 # # E. mvs depth loss
-                # mvs_depth = gt_image_and_depth[2].cuda()
-                # mvs_mask = gt_image_and_depth[3].cuda()
-                # depth_loss_mvs = smooth_l1_loss(rendered_depth * mvs_mask, mvs_depth * mvs_mask)
-                # loss += 0.1 * depth_loss_mvs
+                mvs_depth = gt_image_and_depth[2].cuda()
+                mvs_mask = gt_image_and_depth[3].cuda()
+                depth_loss_mvs = smooth_l1_loss(rendered_depth * mvs_mask, mvs_depth * mvs_mask)
+                loss += 0.02 * depth_loss_mvs
 
                 # # F. pseudo_view depth loss
                 # if iteration % args.sample_pseudo_interval == 0 and iteration > args.start_sample_pseudo and iteration < args.end_sample_pseudo:
@@ -215,7 +219,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 #     Lopa_mask = (- sky * torch.log(1 - o)).mean()
 
                 #     lambda_opa_mask = opt.lambda_opa_mask
-                #     loss = loss + lambda_opa_mask * Lopa_mask
+                #     Lopa = lambda_opa_mask * Lopa_mask
+                #     loss = loss + Lopa
                 # ###### opa mask Loss ######
                 
                 # ###### rigid loss ######
@@ -265,14 +270,14 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             
             iter_end.record()
 
-            loss_dict = {"Ll1": Ll1,
-                        "Lssim": Lssim}
-            
             # loss_dict = {"Ll1": Ll1,
-            #             "Lssim": Lssim,
-            #             "Ldepth_ordinal": depth_loss_ordinal,
-            #             "Ldepth_patch": depth_loss_patch,
-            #             "Ldepth_mvs": depth_loss_mvs}
+            #             "Lssim": Lssim}
+            
+            loss_dict = {"Ll1": Ll1,
+                        "Lssim": Lssim,
+                        "Ldepth_ordinal": depth_loss_ordinal,
+                        "Ldepth_patch": depth_loss_patch,
+                        "Ldepth_mvs": depth_loss_mvs}
 
             with torch.no_grad():
                 psnr_for_log = psnr(image, gt_image).mean().double()
@@ -328,6 +333,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         size_threshold = 15 if iteration > opt.opacity_reset_interval else None
                         if iteration % 1000 == 0:
                             opt.densify_grad_threshold = opt.densify_grad_threshold * 0.82
+                            if opt.densify_grad_threshold <= 0.0002:
+                                opt.densify_grad_threshold = 0.0002
                             # opt.densify_grad_t_threshold = opt.densify_grad_t_threshold * 0.82
                         gaussians.densify_and_prune(opt.densify_grad_threshold, opt.thresh_opa_prune, scene.cameras_extent, size_threshold, opt.densify_grad_t_threshold)
                     
