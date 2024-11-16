@@ -145,6 +145,7 @@ def imagecopy(video, offsetlist=[0],focalscale=1.0, fixfocal=None):
         if not os.path.exists(path):
             os.makedirs(path)
 
+
     for pngpath in pnglist:
         pass 
     
@@ -163,6 +164,14 @@ def imagecopy(video, offsetlist=[0],focalscale=1.0, fixfocal=None):
             cameraname = os.path.basename(pngpath).split("_")[3]
             newpath = os.path.join(video, "images", "cam" + cameraname[:-4] + "_" + str(idx).zfill(4) + ".png")
             shutil.copy(pngpath, newpath)
+
+            # 打开复制后的图片并进行缩放
+            with Image.open(newpath) as img:
+                # 计算新的尺寸，比如缩放到原来的50%
+                new_size = (img.width // 2, img.height // 2)
+                resized_img = img.resize(new_size, Image.LANCZOS)
+                # 保存缩放后的图片
+                resized_img.save(newpath)
 
 
 def checkimage(videopath):

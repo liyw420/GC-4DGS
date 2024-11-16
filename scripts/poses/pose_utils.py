@@ -3,6 +3,8 @@ import os
 import sys
 import imageio
 import skimage.transform
+import open3d as o3d
+from natsort import natsorted, index_natsorted
 
 from scripts.poses.colmap_wrapper import run_colmap
 import scripts.poses.colmap_read_model as read_model
@@ -24,13 +26,14 @@ def load_colmap_data(realdir):
     
     imagesfile = os.path.join(realdir, 'sparse/0/images.bin')
     imdata = read_model.read_images_binary(imagesfile)
-    
+    imdata = dict(natsorted(imdata.items(), key=lambda item: item[1].name))
+
     w2c_mats = []
     bottom = np.array([0,0,0,1.]).reshape([1,4])
     
     names = [imdata[k].name for k in imdata]
     print( 'Images #', len(names))
-    perm = np.argsort(names)
+    perm = index_natsorted(names)
     for k in imdata:
         im = imdata[k]
         R = im.qvec2rotmat()
@@ -76,14 +79,11 @@ def save_poses(basedir, poses, pts3d, perm):
     
     save_arr = []
     for i in perm:
-        if i == 40:
-            close_depth, inf_depth = 0.1, 100
-        else:
-            vis = vis_arr[:, i]
-            zs = zvals[:, i]
-            zs = zs[vis==1]
-            close_depth, inf_depth = np.percentile(zs, .1), np.percentile(zs, 99.9)
-        # print( i, close_depth, inf_depth )
+        vis = vis_arr[:, i]
+        zs = zvals[:, i]
+        zs = zs[vis==1]
+        close_depth, inf_depth = np.percentile(zs, 1), np.percentile(zs, 99)
+        print( i, close_depth, inf_depth )
         
         save_arr.append(np.concatenate([poses[..., i].ravel(), np.array([close_depth, inf_depth])], 0))
     save_arr = np.array(save_arr)

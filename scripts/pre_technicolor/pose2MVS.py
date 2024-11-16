@@ -247,7 +247,7 @@ if __name__ == '__main__':
 
     poses = poses_bounds[:, :15].reshape(-1, 3, 5) # (N, 3, 5)
     bounds = poses_bounds[:, -2:] # (N, 2)
-    H, W = poses[0, :, -1][0], poses[0, :, -1][1] 
+    H, W = poses[0, :, -1][0] / 2, poses[0, :, -1][1] / 2
     print(f'[INFO] H = {H}, W = {W}')
 
     # inversion of this: https://github.com/Fyusion/LLFF/blob/c6e27b1ee59cb18f054ccb0f87a90214dbe70482/llff/poses/pose_utils.py#L51
@@ -268,10 +268,10 @@ if __name__ == '__main__':
                 idx = idx - 1
                 row = [float(c) for c in row if c.strip() != '']
 
-                fx.append(row[0])  
-                fy.append(row[0]) 
-                cx.append(row[1]) 
-                cy.append(row[2])
+                fx.append(row[0] / 2)  
+                fy.append(row[0] / 2) 
+                cx.append(row[1] / 2) 
+                cy.append(row[2] / 2)
     
     train_info = []
     test_info = []
@@ -293,10 +293,9 @@ if __name__ == '__main__':
 
         if i == 10:                                                                         # Technicolor Dataset 测试的视角，cam10 
             test_info += cam_info
-            # train_info += cam_info
 
         # else:                                            
-        elif i == 2 or i == 8 or i == 15:                                                 # Technicolor Dataset 训练的三个视角，cam02, cam08, cam15                            
+        elif i in (2, 8, 15):                                                 # Technicolor Dataset 训练的三个视角，cam02, cam08, cam15                            
             train_info += cam_info
 
     train_transforms = {
@@ -315,87 +314,87 @@ if __name__ == '__main__':
         json.dump(test_transforms, f, indent=2)
 
 
-    # # Colmap MVS
-    # colmap_workspace = os.path.join(args.path, 'tmp')
-    # W, H = int(W), int(H)
-    # os.makedirs(os.path.join(colmap_workspace, 'created', 'sparse'), exist_ok=True)
+    # Colmap MVS
+    colmap_workspace = os.path.join(args.path, 'tmp')
+    W, H = int(W), int(H)
+    os.makedirs(os.path.join(colmap_workspace, 'created', 'sparse'), exist_ok=True)
 
-    # j = 1
+    j = 1
 
-    # with open(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), 'w') as f:
-    #     for i in range(N):
-    #         # f.write(f'{i+1} PINHOLE {W} {H} {fx[i]} {fy[i]} {cx[i]} {cy[i]} \n')
+    with open(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), 'w') as f:
+        for i in range(N):
+            # f.write(f'{i+1} PINHOLE {W} {H} {fx[i]} {fy[i]} {cx[i]} {cy[i]} \n')
             
-    #         if i == 2 or i == 8 or i == 15:
+            if i in (2, 8, 15):
                 
-    #             f.write(f'{j} PINHOLE {W} {H} {fx[i]} {fy[i]} {cx[i]} {cy[i]} \n')
-    #             j += 1
+                f.write(f'{j} PINHOLE {W} {H} {fx[i]} {fy[i]} {cx[i]} {cy[i]} \n')
+                j += 1
     
-    # fname2pose = {}
-    # for frame in train_info:
-    #     if frame['time'] == 0:
-    #         fname = frame['file_path'].split('/')[-1] + '.png'
-    #         pose = np.array(frame['transform_matrix'])
-    #         fname2pose.update({fname: pose})
+    fname2pose = {}
+    for frame in train_info:
+        if frame['time'] == 0:
+            fname = frame['file_path'].split('/')[-1] + '.png'
+            pose = np.array(frame['transform_matrix'])
+            fname2pose.update({fname: pose})
                 
-    # os.makedirs(os.path.join(colmap_workspace, 'images'), exist_ok=True)
-    # for fname in fname2pose.keys():
-    #     os.symlink(os.path.abspath(os.path.join(images_path, fname)), os.path.join(colmap_workspace, 'images', fname))
+    os.makedirs(os.path.join(colmap_workspace, 'images'), exist_ok=True)
+    for fname in fname2pose.keys():
+        os.symlink(os.path.abspath(os.path.join(images_path, fname)), os.path.join(colmap_workspace, 'images', fname))
                 
-    # with open(os.path.join(colmap_workspace, 'created/sparse/images.txt'), 'w') as f:
-    #     idx = 1
-    #     for fname in fname2pose.keys():
-    #         pose = fname2pose[fname]
-    #         R = np.linalg.inv(pose[:3, :3])
-    #         T = -np.matmul(R, pose[:3, 3])
-    #         q0 = 0.5 * math.sqrt(1 + R[0, 0] + R[1, 1] + R[2, 2])
-    #         q1 = (R[2, 1] - R[1, 2]) / (4 * q0)
-    #         q2 = (R[0, 2] - R[2, 0]) / (4 * q0)
-    #         q3 = (R[1, 0] - R[0, 1]) / (4 * q0)
+    with open(os.path.join(colmap_workspace, 'created/sparse/images.txt'), 'w') as f:
+        idx = 1
+        for fname in fname2pose.keys():
+            pose = fname2pose[fname]
+            R = np.linalg.inv(pose[:3, :3])
+            T = -np.matmul(R, pose[:3, 3])
+            q0 = 0.5 * math.sqrt(1 + R[0, 0] + R[1, 1] + R[2, 2])
+            q1 = (R[2, 1] - R[1, 2]) / (4 * q0)
+            q2 = (R[0, 2] - R[2, 0]) / (4 * q0)
+            q3 = (R[1, 0] - R[0, 1]) / (4 * q0)
 
-    #         f.write(f'{idx} {q0} {q1} {q2} {q3} {T[0]} {T[1]} {T[2]} {idx} {fname}\n\n')
-    #         idx += 1
+            f.write(f'{idx} {q0} {q1} {q2} {q3} {T[0]} {T[1]} {T[2]} {idx} {fname}\n\n')
+            idx += 1
     
-    # with open(os.path.join(colmap_workspace, 'created/sparse/points3D.txt'), 'w') as f:
-    #     f.write('')
+    with open(os.path.join(colmap_workspace, 'created/sparse/points3D.txt'), 'w') as f:
+        f.write('')
     
-    # db_path = os.path.join(colmap_workspace, 'database.db')
+    db_path = os.path.join(colmap_workspace, 'database.db')
     
-    # do_system(f"colmap feature_extractor \
-    #             --database_path {db_path} \
-    #             --image_path {os.path.join(colmap_workspace, 'images')}")
+    do_system(f"colmap feature_extractor \
+                --database_path {db_path} \
+                --image_path {os.path.join(colmap_workspace, 'images')}")
     
-    # camTodatabase(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), db_path)
+    camTodatabase(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), db_path)
     
-    # do_system(f"colmap exhaustive_matcher  \
-    #             --database_path {db_path}")
+    do_system(f"colmap exhaustive_matcher  \
+                --database_path {db_path}")
     
-    # os.makedirs(os.path.join(colmap_workspace, 'triangulated', 'sparse'), exist_ok=True)
+    os.makedirs(os.path.join(colmap_workspace, 'triangulated', 'sparse'), exist_ok=True)
     
-    # do_system(f"colmap point_triangulator   \
-    #             --database_path {db_path} \
-    #             --image_path {os.path.join(colmap_workspace, 'images')} \
-    #             --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
-    #             --output_path  {os.path.join(colmap_workspace, 'triangulated/sparse')} \
-    #             --Mapper.ba_global_function_tolerance 0.000001")
+    do_system(f"colmap point_triangulator   \
+                --database_path {db_path} \
+                --image_path {os.path.join(colmap_workspace, 'images')} \
+                --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
+                --output_path  {os.path.join(colmap_workspace, 'triangulated/sparse')} \
+                --Mapper.ba_global_function_tolerance 0.000001")
     
-    # do_system(f"colmap model_converter \
-    #             --input_path  {os.path.join(colmap_workspace, 'triangulated/sparse')} \
-    #             --output_path  {os.path.join(colmap_workspace, 'created/sparse')} \
-    #             --output_type TXT")
+    do_system(f"colmap model_converter \
+                --input_path  {os.path.join(colmap_workspace, 'triangulated/sparse')} \
+                --output_path  {os.path.join(colmap_workspace, 'created/sparse')} \
+                --output_type TXT")
     
-    # os.makedirs(os.path.join(colmap_workspace, 'dense'), exist_ok=True)
+    os.makedirs(os.path.join(colmap_workspace, 'dense'), exist_ok=True)
     
-    # do_system(f"colmap image_undistorter  \
-    #             --image_path  {os.path.join(colmap_workspace, 'images')} \
-    #             --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
-    #             --output_path  {os.path.join(colmap_workspace, 'dense')}")
+    do_system(f"colmap image_undistorter  \
+                --image_path  {os.path.join(colmap_workspace, 'images')} \
+                --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
+                --output_path  {os.path.join(colmap_workspace, 'dense')}")
 
-    # do_system(f"colmap patch_match_stereo   \
-    #                 --workspace_path   {os.path.join(colmap_workspace, 'dense')}")
+    do_system(f"colmap patch_match_stereo   \
+                    --workspace_path   {os.path.join(colmap_workspace, 'dense')}")
 
-    # do_system(f"colmap stereo_fusion    \
-    #                 --workspace_path {os.path.join(colmap_workspace, 'dense')} \
-    #                 --output_path {os.path.join(args.path,'points3d.ply')}")
+    do_system(f"colmap stereo_fusion    \
+                    --workspace_path {os.path.join(colmap_workspace, 'dense')} \
+                    --output_path {os.path.join(args.path,'points3d.ply')}")
     
-    # shutil.rmtree(colmap_workspace)
+    shutil.rmtree(colmap_workspace)
