@@ -46,7 +46,7 @@ except ImportError:
     TENSORBOARD_FOUND = False
 
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint, debug_from,
-             gaussian_dim, time_duration, num_pts, num_pts_ratio, rot_4d, force_sh_3d, batch_size):
+             gaussian_dim, time_duration, num_pts, num_pts_ratio, rot_4d, force_sh_3d, batch_size, pcd_init):
     
     if dataset.frame_ratio > 1:
         time_duration = [time_duration[0] / dataset.frame_ratio,  time_duration[1] / dataset.frame_ratio]
@@ -54,7 +54,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
     gaussians = GaussianModel(dataset.sh_degree, gaussian_dim=gaussian_dim, time_duration=time_duration, rot_4d=rot_4d, force_sh_3d=force_sh_3d, sh_degree_t=2 if pipe.eval_shfs_4d else 0, dist_thres=args.dist_thres)
-    scene = Scene(dataset, gaussians, num_pts=num_pts, num_pts_ratio=num_pts_ratio, time_duration=time_duration)
+    scene = Scene(dataset, gaussians, num_pts=num_pts, num_pts_ratio=num_pts_ratio, time_duration=time_duration, pcd_init=pcd_init)
     gaussians.training_setup(opt)
     
     if checkpoint:
@@ -142,8 +142,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 # C. global ordinal_loss
                 w, h = norm_depth.shape[1], norm_depth.shape[0]
                 base_tensor = torch.arange(0, w * h)
-                num_pairs = 550000   # 1_300_000 dynerf dataset
-                if num_pairs > 550000:
+                num_pairs = int(w * h * 0.99)   # 1_300_000 dynerf dataset
+                if num_pairs > w * h:
                     random_indices_1 = torch.stack((torch.randperm(w * h)[:1_300_000], torch.randperm(w * h)[:1_300_000]), dim = 1)
                     random_indices_2 = torch.stack((torch.randperm(w * h)[:(num_pairs - 1_300_000)], torch.randperm(w * h)[:(num_pairs - 1_300_000)]), dim = 1)
                     random_pairs = torch.cat((base_tensor[random_indices_1], base_tensor[random_indices_2]), dim=0)
@@ -161,13 +161,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 gt_depth_2 = dv2_depth[depth_pixel_2[:, 0], depth_pixel_2[:, 1]]
                 
                 para = 1_000_000 
-                depth_loss_ordinal  = 0.02 * l1_loss(torch.tanh(para * (depth_1 - depth_2)), torch.sign(gt_depth_1 - gt_depth_2))
+                depth_loss_ordinal  = args.depth_ordinal_weight * l1_loss(torch.tanh(para * (depth_1 - depth_2)), torch.sign(gt_depth_1 - gt_depth_2))
 
                 loss += depth_loss_ordinal
 
                 # D. local patch loss
                 depth_loss_patch = patch_norm_mse_loss(norm_depth[None, None, ...], dv2_depth[None, None, ...], 16, 0.0002)
-                loss += 0.02 * depth_loss_patch
+                loss += args.depth_patch_weight * depth_loss_patch
 
                 # if iteration > 3000:
                 #     loss += 0.02 * loss_depth_smoothness(norm_depth[None, None, ...], dv2_depth[None, None, ...])
@@ -176,7 +176,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 mvs_depth = gt_image_and_depth[2].cuda()
                 mvs_mask = gt_image_and_depth[3].cuda()
                 depth_loss_mvs = smooth_l1_loss(rendered_depth * mvs_mask, mvs_depth * mvs_mask)
-                loss += 0.02 * depth_loss_mvs
+                loss += args.depth_mvs_weight * depth_loss_mvs
 
                 # # F. pseudo_view depth loss
                 # if iteration % args.sample_pseudo_interval == 0 and iteration > args.start_sample_pseudo and iteration < args.end_sample_pseudo:
@@ -340,93 +340,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     
                     if iteration % opt.opacity_reset_interval == 0 or (dataset.white_background and iteration == opt.densify_from_iter):
                         gaussians.reset_opacity()
-                
-                # # depth guided densification
-                # if (iteration >= 4000 and iteration % 2000 == 0):
-                #     # selectviews = ['cam05','cam07','cam16']
-                #     selectviews =[]
-
-                #     if len(selectviews) > 0:
-
-                #     # for batch_idx in range(batch_size):
-
-                #         # 选取要进行 guided densification 的对应图片，每个视角只进行一次 guided densification
-                #         gt_image_and_depth, viewpoint_cam = batch_data[0]
-                #         gt_image = gt_image_and_depth[0].cuda()
-                #         gt_depth = gt_image_and_depth[1].cuda()
-                #         viewpoint_cam = viewpoint_cam.cuda()
-                #         select_cam_name = viewpoint_cam.image_name[:5]
-                #         print(select_cam_name)
-                        
-                #         if select_cam_name in selectviews:
-                #             selectviews.remove(select_cam_name)
-                #             render_pkg = render(viewpoint_cam, gaussians, pipe, background)
-                #             image, depth = render_pkg["render"], render_pkg["depth"]
-                            
-                #             # 对渲染图片，真实图片和渲染深度进行patchify
-                #             kernel_size, stride, dilation = 4, 4, 1
-
-                #             image_patches = F.unfold(image[None, ...], kernel_size=kernel_size, stride=stride, dilation=dilation
-                #                                     ).permute(0,2,1).view(-1, 3, kernel_size, stride)
-                            
-                #             gt_image_patches = F.unfold(gt_image[None, ...], kernel_size=kernel_size, stride=stride, dilation=dilation
-                #                                         ).permute(0,2,1).view(-1, 3, kernel_size, stride)
-                            
-                #             # depth_patches = F.unfold(depth[None, ...], kernel_size=kernel_size, stride=stride, dilation=dilation
-                #             #                          ).permute(0,2,1).view(-1, 1, kernel_size, stride)
-                            
-                #             # 计算patch之间的相似度,以此为依据选择不准确的patch进行 guided densification
-                #             patch_similar = torch.tensor([ssim(image_patches, gt_image_patches, window_size=2) 
-                #                                         for image_patches, gt_image_patches in zip(image_patches, gt_image_patches)])
-                            
-                #             sorted_patch_similar, _ = torch.sort(patch_similar, descending=True)
-                #             threshold = sorted_patch_similar[int(0.9 * len(sorted_patch_similar))].item()
-                #             error_mask = patch_similar < threshold
-
-                #             for i in range(len(error_mask)):
-                #                 if error_mask[i] == 1:
-                #                     image_patches[i,:,:,:] = 0
-                #                     gt_image_patches[i,:,torch.randint(int(kernel_size/2-1),int(kernel_size/2+1), (1,)),
-                #                                     torch.randint(int(kernel_size/2-1),int(kernel_size/2+1), (1,))] = 2 # 获取patch选中像素的标记，选中像素的值为2，其余像素的取值范围为0-1
-                #                     # depth_patches[i,:,:,:] = 0
-
-                #             # 将selected patch重建为原始图像,并保存(检查selected patch是否正确)
-                #             image_patches_selected = image_patches.view(image_patches.shape[0], -1).permute(1, 0).unsqueeze(0)
-                #             output_image = F.fold(image_patches_selected, output_size= (gt_image.shape[1], gt_image.shape[2]), 
-                #                                 kernel_size=kernel_size, stride=stride, dilation=dilation).squeeze(0)
-                            
-                #             gt_image_patches_selected = gt_image_patches.view(gt_image_patches.shape[0], -1).permute(1, 0).unsqueeze(0)
-                #             output_gt_image = F.fold(gt_image_patches_selected, output_size= (gt_image.shape[1], gt_image.shape[2]), 
-                #                                     kernel_size=kernel_size, stride=stride, dilation=dilation).squeeze(0)
-                            
-                #             # depth_patches_selected = depth_patches.view(depth_patches.shape[0], -1).permute(1, 0).unsqueeze(0)
-                #             # output_depth = F.fold(depth_patches_selected, output_size= (depth.shape[1], depth.shape[2]), 
-                #                                 #  kernel_size=kernel_size, stride=stride, dilation=dilation).squeeze(0)
-                            
-                #             torchvision.utils.save_image(image, os.path.join(scene.model_path,  "render_" + str(iteration) + str(select_cam_name) + ".png"))
-                #             torchvision.utils.save_image(gt_image, os.path.join(scene.model_path,  "gt_" + str(iteration) + str(select_cam_name) + ".png"))
-                #             torchvision.utils.save_image(output_image, os.path.join(scene.model_path,  "maskedrender_" + str(iteration) + str(select_cam_name) + ".png"))
-                #             torchvision.utils.save_image(output_gt_image, os.path.join(scene.model_path,  "maskedgt_" + str(iteration) + str(select_cam_name) + ".png"))
-
-                #             # depth = (depth - depth.min()) / (depth.max() - depth.min()) * 255
-                #             depth_map = vis_depth(depth[0].detach().cpu().numpy())
-                #             # depth_map = depth[0].detach().cpu().numpy()
-                #             cv2.imwrite(os.path.join(scene.model_path,  "renderdepth_" + str(iteration) + str(select_cam_name)+ ".png"), depth_map)
-
-                #             # output_depth = (output_depth - output_depth.min()) / (output_depth.max() - output_depth.min()) * 255
-                #             # output_depth_map = output_depth[0].detach().cpu().numpy()
-                #             # cv2.imwrite(os.path.join(scene.model_path,  "maskeddepth_" + str(iteration) + ".png"), output_depth_map)
-
-                #             # 每个被选中的patch进行guided densification得到一个点云。获得点云的像素坐标
-                #             selected_pixel = torch.nonzero(output_gt_image[0] == 2)
-
-                #             # 基于深度图进行 guided densification
-                #             depth = depth.squeeze(0).detach()
-                #             gt_depth = gt_depth.detach()
-                #             new_points = gaussians.guided_densification(selected_pixel, viewpoint_cam, depth, gt_depth, gt_image,)
-                        
-                #         else: 
-                #             break
 
                 # Optimizer step
                 if iteration < opt.iterations:
@@ -565,6 +478,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--exhaust_test", action="store_true")
+    parser.add_argument("--pcd_init", type=str, default="COLMAP")
     
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
@@ -592,7 +506,7 @@ if __name__ == "__main__":
 
     torch.autograd.set_detect_anomaly(args.detect_anomaly)  # 不启用计算图的异常监测
     training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations, args.start_checkpoint, args.debug_from,
-             args.gaussian_dim, args.time_duration, args.num_pts, args.num_pts_ratio, args.rot_4d, args.force_sh_3d, args.batch_size)
+             args.gaussian_dim, args.time_duration, args.num_pts, args.num_pts_ratio, args.rot_4d, args.force_sh_3d, args.batch_size, args.pcd_init)
 
     # All done
     print("\nTraining complete.")

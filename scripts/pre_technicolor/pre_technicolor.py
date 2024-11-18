@@ -131,7 +131,7 @@ def convertmodel2dbfiles(path, offset=0):
 
 
 
-def imagecopy(video, offsetlist=[0],focalscale=1.0, fixfocal=None):
+def imagecopy(video, offsetlist=[0],focalscale=1.0, fixfocal=None, final=None, resolution="2"):
     import cv2
     import numpy as np
     import os 
@@ -141,7 +141,7 @@ def imagecopy(video, offsetlist=[0],focalscale=1.0, fixfocal=None):
     camlist = ["cam"+str(_).zfill(2) for _ in range(16)]
     for cam in camlist:
         # path = os.path.join(video,"images/" + cam)
-        path = os.path.join(video,"images/")
+        path = os.path.join(final,"images/")
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -152,7 +152,7 @@ def imagecopy(video, offsetlist=[0],focalscale=1.0, fixfocal=None):
     for idx , offset in enumerate(offsetlist):
         pnglist = glob.glob(video + "*_undist_" + str(offset).zfill(5)+"_*.png")
         if idx == 0:
-            targetfolder = os.path.join(video, "colmap", "input")
+            targetfolder = os.path.join(final, "colmap", "input")
             if not os.path.exists(targetfolder):
                 os.makedirs(targetfolder)
             for pngpath in pnglist:
@@ -162,16 +162,18 @@ def imagecopy(video, offsetlist=[0],focalscale=1.0, fixfocal=None):
 
         for pngpath in pnglist:
             cameraname = os.path.basename(pngpath).split("_")[3]
-            newpath = os.path.join(video, "images", "cam" + cameraname[:-4] + "_" + str(idx).zfill(4) + ".png")
+            newpath = os.path.join(final, "images", "cam" + cameraname[:-4] + "_" + str(idx).zfill(4) + ".png")
             shutil.copy(pngpath, newpath)
 
             # 打开复制后的图片并进行缩放
             with Image.open(newpath) as img:
                 # 计算新的尺寸，比如缩放到原来的50%
-                new_size = (img.width // 2, img.height // 2)
+                new_size = (img.width // int(resolution), img.height // int(resolution))
                 resized_img = img.resize(new_size, Image.LANCZOS)
                 # 保存缩放后的图片
                 resized_img.save(newpath)
+    
+    shutil.copy(os.path.join(video, "cameras_parameters.txt"), os.path.join(final, "cameras_parameters.txt"))
 
 
 def checkimage(videopath):
@@ -232,31 +234,34 @@ if __name__ == "__main__" :
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--videopath", default="", type=str)
+    parser.add_argument("--train_views", default="3", type=str)
+    parser.add_argument("--resolution", default="2", type=str)
     args = parser.parse_args()
 
     
 
 
-    videopath = args.videopath
+    videopath = os.path.join(args.videopath, "original_data")
+    finalpath = os.path.join(args.videopath, f"{args.train_views}_views")
 
     if not videopath.endswith("/"):
         videopath = videopath + "/"
     
-    srcscene = videopath.split("/")[-2]
+    srcscene = videopath.split("/")[-3]
     print("srcscene", srcscene)
 
     if srcscene == "Birthday":
         print("check broken")
         fixbroken(videopath + "Birthday_undist_00173_09.png", videopath + "Birthday_undist_00172_09.png")
         
-    imagecopy(videopath, offsetlist=framerangedict[srcscene])
+    imagecopy(videopath, offsetlist=framerangedict[srcscene], final = finalpath, resolution=args.resolution)
     # #
     for offset in tqdm.tqdm(range(0, 1)):
-        convertmodel2dbfiles(videopath, offset=offset)
+        convertmodel2dbfiles(finalpath, offset=offset)
 
     for offset in range(0, 1):
-        getcolmapsingletechni(videopath, offset=offset)
+        getcolmapsingletechni(finalpath, offset=offset)
 
-    #  rm -r colmap_* # once meet error, delete all colmap_* folders and rerun this script. 
+
 
 

@@ -69,7 +69,7 @@ def loadCam(args, id, cam_info, resolution_scale):
                   image_name=cam_info.image_name, uid=id, data_device=args.data_device, 
                   timestamp=cam_info.timestamp, bounds=cam_info.bounds,                 # 添加一组参数bounds,为图像的最大最小深度值，用于计算相机的视锥体
                   cx=cx, cy=cy, fl_x=fl_x, fl_y=fl_y, depth=depth, resolution=resolution, image_path=cam_info.image_path,
-                  meta_only=args.dataloader
+                  meta_only=args.dataloader, fisheyemapper = None
                   )
 
 def cameraList_from_camInfos(cam_infos, resolution_scale, args):

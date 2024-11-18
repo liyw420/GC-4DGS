@@ -42,8 +42,8 @@ from scripts.pre_immersive.utils_pre import write_colmap
 
 def extractframes(videopath: Path, startframe=0, endframe=50, downscale=1, save_subdir = '', ext='png'):
     # output_dir = videopath.parent / save_subdir / videopath.stem
-    output_dir = videopath.parent / save_subdir / "images"
-        
+    output_dir1 = videopath.parent / save_subdir / "images"
+    output_dir2 = videopath.parent / save_subdir / "images_half"
     # if all((output_dir / f"{i}.{ext}").exists() for i in range(startframe, endframe)):
     #     print(f"Already extracted all the frames in {output_dir}")
     #     return
@@ -51,7 +51,8 @@ def extractframes(videopath: Path, startframe=0, endframe=50, downscale=1, save_
     cam = cv2.VideoCapture(str(videopath))
     cam.set(cv2.CAP_PROP_POS_FRAMES, startframe)
 
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir1.mkdir(parents=True, exist_ok=True)
+    output_dir2.mkdir(parents=True, exist_ok=True)
 
     for i in range(startframe, endframe):
         success, frame = cam.read()
@@ -59,11 +60,12 @@ def extractframes(videopath: Path, startframe=0, endframe=50, downscale=1, save_
             print(f"Error reading frame {i}")
             break
 
+        cv2.imwrite(str(output_dir1 / f"{videopath.stem}_{i:04d}.{ext}"), frame)
+        
         if downscale > 1:
             new_width, new_height = int(frame.shape[1] / downscale), int(frame.shape[0] / downscale)
             frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
-
-        cv2.imwrite(str(output_dir / f"{videopath.stem}_{i:04d}.{ext}"), frame)
+            cv2.imwrite(str(output_dir2 / f"{videopath.stem}_{i:04d}.{ext}"), frame)
 
     cam.release()
 

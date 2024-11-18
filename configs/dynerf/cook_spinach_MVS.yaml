@@ -9,8 +9,8 @@ exhaust_test: True
 
 ModelParams:
   sh_degree: 3
-  source_path: "data/N3V/cut_roasted_beef_MVS"
-  model_path: "output/N3V/cut_roasted_beef_MVS"
+  source_path: "data/N3V/cook_spinach_MVS"
+  model_path: "output/N3V/cook_spinach_MVS"
   images: "images"
   resolution: 1
   white_background: False

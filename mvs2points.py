@@ -225,13 +225,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser() 
     parser.add_argument("--path", default="", help="input path to the camera parameters")
     parser.add_argument("--mvs_config", default="", help="")
-    parser.add_argument("--dataset", default="", help="dynerf, techicolor")
+    parser.add_argument("--dataset", default="", help="dynerf, techicolor,immersive")
+    parser.add_argument("--resolution", default="", help="")
 
     args = parser.parse_args()
     
     # path must end with / to make sure image path is relative
     if args.path[-1] != '/':
         args.path += '/'
+
+    args.resolution = [int(x) for x in args.resolution.split(",")]
     
     if args.dataset == "dynerf":
     
@@ -242,17 +245,16 @@ if __name__ == '__main__':
         time_stamp =sorted(list(set([cam.timestamp for cam in train_cam_infos])))
         cam_infos = []
 
-        for time in time_stamp:
+        for time in time_stamp[:]:
             cam_infos = [cam for cam in train_cam_infos if cam.timestamp == time]
-            mvs_idx = [4, 6, 13] # cut_beef train 05, 07, 16
-            mvs_cam = [c for idx, c in enumerate(cam_infos) if idx in mvs_idx]
+            mvs_cam = [c for idx, c in enumerate(cam_infos)]
             
             print('Predicting MVS depth...')
             mvs_estimator = MvsEstimator(args.mvs_config)
-            vertices, mvs_depths, masks = mvs_estimator.get_mvs_pts(mvs_cam, save_path)
+            vertices, mvs_depths, masks = mvs_estimator.get_mvs_pts(mvs_cam, save_path, args.resolution, time)
             torch.cuda.empty_cache()
 
-    elif args.dataset == "technicolor":
+    elif args.dataset in ["technicolor", "enerf_outdoor"]:
         
         print("Reading Training Transforms")    
         train_cam_infos = readCamerasFromTransforms2(args.path, "transforms_train.json", white_background = False, extension = ".png", time_duration = [0, 10], frame_ratio=1.0, dataloader = False)
@@ -261,14 +263,14 @@ if __name__ == '__main__':
         time_stamp =sorted(list(set([cam.timestamp for cam in train_cam_infos])))
         cam_infos = []
 
-        for time in time_stamp:
+        for time in time_stamp[:]:
             cam_infos = [cam for cam in train_cam_infos if cam.timestamp == time]
-            # mvs_idx = [2, 8, 15] # Technicolor train cam 02, 08, 15
-            # mvs_cam = [c for idx, c in enumerate(cam_infos) if idx in mvs_idx]
             mvs_cam = [c for idx, c in enumerate(cam_infos)]
             
             print('Predicting MVS depth...')
             mvs_estimator = MvsEstimator(args.mvs_config)
-            vertices, mvs_depths, masks = mvs_estimator.get_mvs_pts(mvs_cam, save_path)
+            vertices, mvs_depths, masks = mvs_estimator.get_mvs_pts(mvs_cam, save_path, args.resolution, time)
             torch.cuda.empty_cache()
+        
+        
 

@@ -107,7 +107,9 @@ class OptimizationParams(ParamGroup):
         self.lambda_rigid = 0.0
         self.lambda_motion = 0.0
         self.dist_thres = 10
-        self.depth_weight = 0.05
+        self.depth_ordinal_weight = 0.02
+        self.depth_patch_weight = 0.02
+        self.depth_mvs_weight = 0.02
         self.start_sample_pseudo = 2000
         self.end_sample_pseudo = 28000
         self.sample_pseudo_interval = 10

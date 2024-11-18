@@ -9,8 +9,8 @@ exhaust_test: True
 
 ModelParams:
   sh_degree: 3
-  source_path: "data/lightfield/Birthday"
-  model_path: "output/lightfield/Birthday"
+  source_path: "data/technicolor/Train/3_views"
+  model_path: "output/technicolor/Train/3_views/COLMAP"
   images: "images"
   resolution: 1
   white_background: False
@@ -58,7 +58,9 @@ OptimizationParams:
   lambda_rigid: 0.0
   lambda_motion: 0.0
   dist_thres: 10                        # dist_thres
-  depth_weight: 0.020                   # depth_weight        
+  depth_ordinal_weight: 0.020           # depth_weight
+  depth_patch_weight: 0.020
+  depth_mvs_weight: 0.02
   start_sample_pseudo: 2500             # start_sample_pseudo
   end_sample_pseudo: 5000               # end_sample_pseudo
   sample_pseudo_interval: 10            # sample_pseudo_interval

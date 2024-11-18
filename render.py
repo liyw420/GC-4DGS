@@ -151,10 +151,10 @@ def render_video(source_path, model_path, loaded_pth, views, gaussians, pipeline
     final_video.release()
 
 def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool,
-                skip_pseudo:bool, skip_video: bool, mode: str):
+                skip_pseudo:bool, skip_video: bool, mode: str, pcd_init: str):
     with torch.no_grad():
         gaussians = GaussianModel(dataset.sh_degree, gaussian_dim=4, time_duration=[0.0, 8.0], rot_4d=True, force_sh_3d=False, sh_degree_t=2 if pipeline.eval_shfs_4d else 0)
-        scene = Scene(dataset, gaussians, num_pts=300000, num_pts_ratio=1.0, time_duration=[0.0, 10.0], shuffle=False)
+        scene = Scene(dataset, gaussians, num_pts=300000, num_pts_ratio=1.0, time_duration=[0.0, 8.0], shuffle=False, pcd_init = pcd_init)
 
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]   # background is black
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
@@ -172,17 +172,17 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
         # else:
         #     render_func = interpolate_all
 
-        # if not skip_train:
-        #      render_func(dataset.model_path, "train", dataset.loaded_pth, scene.getTrainCameras(), gaussians, pipeline, background)
+        if not skip_train:
+             render_func(dataset.model_path, "train", dataset.loaded_pth, scene.getTrainCameras(), gaussians, pipeline, background)
 
         if not skip_test:
             render_func(dataset.model_path, "test", dataset.loaded_pth, scene.getTestCameras(), gaussians, pipeline, background)
         
-        if not skip_pseudo:
-            render_func(dataset.model_path, "pseudo", dataset.loaded_pth, scene.getPseudoCameras()[::(241+1)], gaussians, pipeline, background)
+        # if not skip_pseudo:
+        #     render_func(dataset.model_path, "pseudo", dataset.loaded_pth, scene.getPseudoCameras()[::(300+1)], gaussians, pipeline, background, pcd_init)
         
         # if not skip_video:
-        #     render_video(dataset.source_path, dataset.model_path, dataset.loaded_pth, scene.getTestCameras(), gaussians, pipeline, background)            
+        #     render_video(dataset.source_path, dataset.model_path, dataset.loaded_pth, scene.getTestCameras(), gaussians, pipeline, background, pcd_init)            
 
 if __name__ == "__main__":
     # Set up command line argument parser
@@ -196,6 +196,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip_pseudo", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--mode", default='render', choices=['render', 'time', 'view', 'all', 'pose', 'original'])
+    parser.add_argument("--pcd_init", type=str, default="COLMAP")
     args = get_combined_args(parser)
     
     print("Rendering " + args.model_path)
@@ -203,4 +204,4 @@ if __name__ == "__main__":
     # Initialize system state (RNG)
     safe_state(args.quiet)
 
-    render_sets(model.extract(args), args.iteration, pipeline.extract(args), args.skip_train, args.skip_test, args.skip_pseudo, args.skip_video, args.mode)
+    render_sets(model.extract(args), args.iteration, pipeline.extract(args), args.skip_train, args.skip_test, args.skip_pseudo, args.skip_video, args.mode, args.pcd_init)

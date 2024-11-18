@@ -273,7 +273,7 @@ def generate_random_poses(spatial_temporal_views,
 
     # Get radii for spiral path using 90th percentile of camera positions.
     positions = poses[:, :3, 3]
-    radii = np.percentile(np.abs(positions), 100, 0) 
+    radii = np.percentile(np.abs(positions), 50, 0) 
     radii = np.concatenate([radii, [1.]])
 
     # Generate ellipse random poses.

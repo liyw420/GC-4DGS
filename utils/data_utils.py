@@ -21,7 +21,9 @@ class CameraDataset(Dataset):
             norm_data = im_data / 255.0
             arr = norm_data[:,:,:3] * norm_data[:, :, 3:4] + self.bg * (1 - norm_data[:, :, 3:4])
             image_load = Image.fromarray(np.array(arr*255.0, dtype=np.byte), "RGB")
+
             resized_image_rgb = PILtoTorch(image_load, viewpoint_cam.resolution)
+            
             viewpoint_image = resized_image_rgb[:3, ...].clamp(0.0, 1.0)
             if resized_image_rgb.shape[1] == 4:
                 gt_alpha_mask = resized_image_rgb[3:4, ...]
@@ -35,9 +37,10 @@ class CameraDataset(Dataset):
                 dv2_depth_array = np.load(dv2_depth_path)
                 viewpoint_dv2_depth = torch.from_numpy(dv2_depth_array)
             else:
-                viewpoint_dv2_depth = torch.zeros((viewpoint_cam.image_height, viewpoint_cam.image_width)) 
+                viewpoint_dv2_depth = torch.zeros((viewpoint_cam.image_height, viewpoint_cam.image_width))
             
             mvs_depth_path = viewpoint_cam.image_path.replace("images", "mvs").replace('.png', '_depth.npy')
+            # mvs_depth_path = viewpoint_cam.image_path.replace("images_half", "mvs").replace('.png', '_depth.npy')
             if os.path.exists(mvs_depth_path):
                 mvs_depth_array = np.load(mvs_depth_path)
                 viewpoint_mvs_depth = torch.from_numpy(mvs_depth_array)
@@ -45,6 +48,7 @@ class CameraDataset(Dataset):
                 viewpoint_mvs_depth = torch.zeros((viewpoint_cam.image_height, viewpoint_cam.image_width))
 
             mask_path = viewpoint_cam.image_path.replace("images", "mvs").replace('.png', '_mask.npy')
+            # mask_path = viewpoint_cam.image_path.replace("images_half", "mvs").replace('.png', '_mask.npy')
             if os.path.exists(mask_path):
                 mvs_mask_array = np.load(mask_path)
                 viewpoint_mvs_mask = torch.from_numpy(mvs_mask_array)
@@ -54,7 +58,7 @@ class CameraDataset(Dataset):
         else:
             viewpoint_image = viewpoint_cam.image
             
-        return [viewpoint_image, viewpoint_dv2_depth, viewpoint_mvs_depth, viewpoint_mvs_mask ], viewpoint_cam
+        return [viewpoint_image, viewpoint_dv2_depth, viewpoint_mvs_depth, viewpoint_mvs_mask], viewpoint_cam
     
     def __len__(self):
         return len(self.viewpoint_stack)

@@ -25,7 +25,7 @@ class MvsEstimator:
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
 
-    def get_mvs_pts(self, input_cams, save_path=None):
+    def get_mvs_pts(self, input_cams, save_path=None, resolution =(1352, 1014), time =0):
         all_ori_imgs = []
         mvs_depths = []
         photometric_confidences = []
@@ -37,7 +37,7 @@ class MvsEstimator:
             all_cams = [ref_cam] + input_cams_copy # ref view + src view
 
             # prepare MVS inputs
-            imgs, ori_imgs, proj_matrices, ref_depth_bins = self.prepare_mvs_input(all_cams, bds_scale_factor=self.scale_bds)
+            imgs, ori_imgs, proj_matrices, ref_depth_bins = self.prepare_mvs_input(all_cams, bds_scale_factor=self.scale_bds, resolution=resolution)
             proj_matrices_ms = self.get_ms_proj_mats(proj_matrices)
 
             with torch.no_grad():
@@ -64,18 +64,26 @@ class MvsEstimator:
                 file_name = input_cams[v].image_name
 
                 mask = masks[v].astype(np.uint8)      # 0: invalid, 1: valid
-                resized_mask = cv2.resize(mask, (2048, 1088), interpolation=cv2.INTER_NEAREST)
+                resized_mask = cv2.resize(mask, (resolution), interpolation=cv2.INTER_NEAREST)
                 cv2.imwrite(os.path.join(save_path, file_name+'_mask.png'), resized_mask * 255)
                 np.save(os.path.join(save_path, file_name + '_mask.npy'), resized_mask)
 
                 depth_est = mvs_depths[v]
-                resized_depth = cv2.resize(depth_est, (2048, 1088), interpolation=cv2.INTER_NEAREST) 
+                # # outlier removal
+                # min_depth = 0.5  # 最小深度
+                # max_depth = 50.0  # 最大深度
+
+                # # 将超出范围的值设置为 NaN 或其他标记值
+                # depth_est[(depth_est < min_depth)] = min_depth 
+                # depth_est[(depth_est > max_depth)] = max_depth
+
+                resized_depth = cv2.resize(depth_est, (resolution), interpolation=cv2.INTER_NEAREST) 
                 depth_img = vis_depth(resized_depth)
                 cv2.imwrite(os.path.join(save_path, file_name + '.png'), depth_img)
                 np.save(os.path.join(save_path, file_name + '_depth.npy'), resized_depth)
 
             el = PlyElement.describe(points, 'vertex')
-            PlyData([el]).write(os.path.join(save_path, 'mvs_input.ply'))
+            PlyData([el]).write(os.path.join(save_path, f'mvs_input_{time}.ply'))
         
         return points, mvs_depths, masks
 
@@ -134,7 +142,7 @@ class MvsEstimator:
 
         return vertex_all, masks
 
-    def prepare_mvs_input(self, input_cams, num_depths=192, bds_scale_factor=[1.0, 1.0]):
+    def prepare_mvs_input(self, input_cams, num_depths=192, bds_scale_factor=[1.0, 1.0], resolution=(1352, 1014)):
         imgs = []
         ori_imgs = []
         proj_matrices = []

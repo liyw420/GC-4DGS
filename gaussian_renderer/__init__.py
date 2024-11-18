@@ -158,7 +158,21 @@ def render(viewpoint_camera, pc : GaussianModel, pipe, bg_color : torch.Tensor, 
         rotations = rotations,
         rotations_r = rotations_r,
         cov3D_precomp = cov3D_precomp)
-    
+
+    # if viewpoint_camera.fisheyemapper is not None:
+    #     newiamge = F.grid_sample(rendered_image.unsqueeze(0), viewpoint_camera.fisheyemapper, mode='bicubic', padding_mode='zeros', align_corners=True)
+    #     rendered_image = F.interpolate(newiamge, size=(int(0.5 * viewpoint_camera.image_height) , int(0.5 * viewpoint_camera.image_width)), mode='bicubic', align_corners=True)
+    #     rendered_image = rendered_image.squeeze(0)
+
+    #     newdepth = F.grid_sample(depth.unsqueeze(0), viewpoint_camera.fisheyemapper, mode='bicubic', padding_mode='zeros', align_corners=True)
+    #     depth = F.interpolate(newdepth, size=(int(0.5 *viewpoint_camera.image_height) , int(0.5 *viewpoint_camera.image_width)), mode='bicubic', align_corners=True)
+    #     depth = depth.squeeze(0)  
+
+    #     newalpha = F.grid_sample(alpha.unsqueeze(0), viewpoint_camera.fisheyemapper, mode='bicubic', padding_mode='zeros', align_corners=True)
+    #     alpha = F.interpolate(newalpha, size=(int(0.5 *viewpoint_camera.image_height) , int(0.5 *viewpoint_camera.image_width)), mode='bicubic', align_corners=True)
+    #     alpha = alpha.squeeze(0)   
+
+
     if pipe.env_map_res:
         assert pc.env_map is not None
         R = 60

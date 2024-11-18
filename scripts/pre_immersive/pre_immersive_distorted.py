@@ -49,15 +49,15 @@ from scripts.pre_immersive.utils_pre import write_colmap
 SCALEDICT = {}
 
 
-Immersiveseven = ["01_Welder",  "02_Flames", "04_Truck", "09_Alexa", "10_Alexa", "11_Alexa", "12_Cave"]
+Immersiveseven = ["01_Welder",  "02_Flames", "04_Truck", "09_Exhibit", "10_Face", "11_Alexa", "12_Cave"]
 immmersivescaledict = {}
-immmersivescaledict["01_Welder"] = 0.36
-immmersivescaledict["02_Flames"] = 0.35
-immmersivescaledict["04_Truck"] = 0.36
-immmersivescaledict["09_Alexa"] = 0.36
-immmersivescaledict["10_Alexa"] = 0.36
-immmersivescaledict["11_Alexa"] = 0.36
-immmersivescaledict["12_Cave"] = 0.36
+immmersivescaledict["01_Welder"] = 1.0
+immmersivescaledict["02_Flames"] = 1.0
+immmersivescaledict["04_Truck"] = 1.0
+immmersivescaledict["09_Exhibit"] = 1.0
+immmersivescaledict["10_Face"] = 1.0
+immmersivescaledict["11_Alexa"] = 1.0
+immmersivescaledict["12_Cave"] = 1.0
 
 for scene in Immersiveseven:
     immmersivescaledict[scene + "_dist"] =immmersivescaledict[scene] 
@@ -67,6 +67,7 @@ for scene in Immersiveseven:
 def convertmodel2dbfiles(path, offset=0, scale=1.0):
     with (path / "models.json").open("r") as f:
         meta = json.load(f)
+    meta = sorted(meta, key=lambda x: x['name'])
 
     cameras =[]
 
@@ -261,28 +262,27 @@ def imageundistort_copy(video, offsetlist=range(50),focalscale=1.0, fixfocal=Non
             
             if not os.path.exists(imagepath2):
                 os.mkdir(imagepath2)
-            else:
-                imagesavepath = os.path.join(new_path,"images_undistorted", f"{folder}_{offset:04d}.png")
-                assert imagepath.exists()
-                image = cv2.imread(imagepath).astype(np.float32) #/ 255.0
 
-                h, w = image.shape[:2]
+            imagesavepath = os.path.join(new_path,"images_undistorted", f"{folder}_{offset:04d}.png")
+            assert imagepath.exists()
+            image = cv2.imread(imagepath).astype(np.float32) #/ 255.0
 
-                image_size = (w, h)
-                knew = np.zeros((3, 3), dtype=np.float32)
+            h, w = int(image.shape[:2][0] / 2), int(image.shape[:2][1] / 2)
+
+            knew = np.zeros((3, 3), dtype=np.float32)
+
+            knew[0,0] = focalscale * intrinsics[0,0] / 2
+            knew[1,1] = focalscale * intrinsics[1,1] / 2
+            knew[0,2] =  view['principal_point'][0]  / 2    # cx fixed half of the width
+            knew[1,2] =  view['principal_point'][1]  / 2    #
+            knew[2,2] =  1.0
+
+            map1, map2 = cv2.fisheye.initUndistortRectifyMap(intrinsics, dis_cef, R=None, P=knew, size=(w, h), m1type=cv2.CV_32FC1)
+
+            undistorted_image = cv2.remap(image, map1, map2, interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT)
+            undistorted_image = undistorted_image.clip(0,255.0).astype(np.uint8)
     
-                knew[0,0] = focalscale * intrinsics[0,0]
-                knew[1,1] = focalscale * intrinsics[1,1]
-                knew[0,2] =  view['principal_point'][0] # cx fixed half of the width
-                knew[1,2] =  view['principal_point'][1] #
-                knew[2,2] =  1.0
-
-                map1, map2 = cv2.fisheye.initUndistortRectifyMap(intrinsics, dis_cef, R=None, P=knew, size=(w, h), m1type=cv2.CV_32FC1)
-
-                undistorted_image = cv2.remap(image, map1, map2, interpolation=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT)
-                undistorted_image = undistorted_image.clip(0,255.0).astype(np.uint8)
-        
-                cv2.imwrite(imagesavepath, undistorted_image)
+            cv2.imwrite(imagesavepath, undistorted_image)
 
 
 def softlinkdataset(originalpath: Path, path: Path):
@@ -341,8 +341,8 @@ if __name__ == "__main__" :
     scale = immmersivescaledict[scene]
 
     videoslist = sorted(videopath.glob("*.mp4"))
-    for v in tqdm.tqdm(videoslist, desc="extract frames"):
-        extractframes(v)
+    # for v in tqdm.tqdm(videoslist, desc="extract frames"):
+    #     extractframes(v)
 
     softlinkdataset(videopath, dstpath)
   
@@ -353,12 +353,12 @@ if __name__ == "__main__" :
 
     try:
         for offset in tqdm.tqdm(range(startframe, endframe), desc="convertmodel2dbfiles"):
-            if offset == 10:
+            if offset == 0:
                 convertmodel2dbfiles(Path(dstpath), offset=offset, scale=scale)
     except:
         print("create colmap input failed, better clean the data and try again")
         quit()
         
     for offset in range(startframe, endframe):
-        if offset == 10:
+        if offset == 0:
             getcolmapsingleimdistort(dstpath, offset=offset)

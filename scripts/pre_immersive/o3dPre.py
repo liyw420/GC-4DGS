@@ -18,11 +18,12 @@ parser.add_argument("--downsampling_rate", default="", help="")
 parser.add_argument("--output_path", default="", help="")
 args = parser.parse_args()
 
-pcd = o3d.io.read_point_cloud(os.path.join(args.mvs_input, 'mvs_input.ply'))
+# pcd = o3d.io.read_point_cloud(os.path.join(args.mvs_input, "mvs", 'mvs_input.ply'))
+pcd = o3d.io.read_point_cloud(os.path.join(args.mvs_input, "points3d.ply"))
 
-# 点云过滤
-print("Statistical oulier removal")
-filtered_ptc,_ = pcd.remove_statistical_outlier(nb_neighbors=3,std_ratio=0.01)
+# # 点云过滤
+# print("Statistical oulier removal")
+# filtered_ptc,_ = pcd.remove_statistical_outlier(nb_neighbors=3,std_ratio=0.01)
 
 # 点云随机降采样
 sample_ratio = float(args.downsampling_rate)

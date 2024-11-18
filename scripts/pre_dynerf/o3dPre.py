@@ -12,7 +12,7 @@ import sqlite3
 
 
 # 点云读取
-pcd = o3d.io.read_point_cloud(os.path.join('/media/vincent/HDD-02/MVPGS/dataset/ptc', 'mvs_input.ply'))
+pcd = o3d.io.read_point_cloud(os.path.join('/media/vincent/HDD-02/fs4dgs/data/N3V/sear_steak_MVS', 'mvs_input.ply'))
 
 # # 点云过滤
 # print("Statistical oulier removal")
@@ -52,10 +52,8 @@ filtered_point_cloud.colors = o3d.utility.Vector3dVector(filtered_colors)
 
 # 保存合并后的点云
 # output_path = os.path.join('/media/vincent/HDD-02/fs4dgs/data/N3V/cut_roasted_beef_MVS', 'points3d.ply')
-output_path = os.path.join('/media/vincent/HDD-02/fs4dgs/data/N3V/coffee_martini_MVS', 'points3d.ply')
+output_path = os.path.join('/media/vincent/HDD-02/fs4dgs/data/N3V/sear_steak_MVS', 'points3d.ply')
 o3d.io.write_point_cloud(output_path, filtered_point_cloud)
 
 # 可视化合并后的点云
 o3d.visualization.draw_geometries([filtered_point_cloud])
-# print(f"[INFO] Initial point cloud is saved in {os.path.join('/media/vincent/HDD-02/fs4dgs/data/N3V/cut_roasted_beef_MVS', 'points3d.ply')}.")
-print(f"[INFO] Initial point cloud is saved in {os.path.join('/media/vincent/HDD-02/fs4dgs/data/N3V/coffee_martini_MVS', 'points3d.ply')}.")

@@ -21,12 +21,13 @@ from utils.camera_utils import cameraList_from_camInfos, camera_to_JSON
 from utils.data_utils import CameraDataset
 from scene.cameras import PseudoCamera
 from utils.pose_utils import generate_random_poses
+from utils.helper_train import getfisheyemapper
 
 class Scene:
 
     gaussians : GaussianModel
 
-    def __init__(self, args : ModelParams, gaussians : GaussianModel, load_iteration=None, shuffle=True, resolution_scales=[1.0], num_pts=100_000, num_pts_ratio=1.0, time_duration=None):
+    def __init__(self, args : ModelParams, gaussians : GaussianModel, load_iteration=None, shuffle=True, resolution_scales=[1.0], num_pts=100_000, num_pts_ratio=1.0, time_duration=None, pcd_init="MVSFormer"):
         """b
         :param path: Path to colmap scene main folder.
         """
@@ -46,13 +47,16 @@ class Scene:
         self.test_cameras = {}
         self.pseudo_cameras = {}
 
-        if os.path.exists(os.path.join(args.source_path, "sparse")):
-            scene_info = sceneLoadTypeCallbacks["Colmap"](args.source_path, args.white_background, args.eval, num_pts=num_pts, time_duration=time_duration, extension=args.extension, num_extra_pts=args.num_extra_pts, frame_ratio=args.frame_ratio, dataloader=args.dataloader)
+        if os.path.exists(os.path.join(args.source_path, "cameras_parameters.txt")):
+            scene_info = sceneLoadTypeCallbacks["Technicolor"](args.source_path, args.white_background, args.eval, num_pts=num_pts, time_duration=time_duration, extension=args.extension, num_extra_pts=args.num_extra_pts, frame_ratio=args.frame_ratio, dataloader=args.dataloader, pcd_init=pcd_init)
 
-        elif os.path.exists(os.path.join(args.source_path, "transforms_train.json")):
+        elif os.path.exists(os.path.join(args.source_path, "cam00.mp4")):
             print("Found transforms_train.json file, assuming Blender data set!")
-            # 加载训练集和测试集数据
-            scene_info = sceneLoadTypeCallbacks["Blender"](args.source_path, args.white_background, args.eval, num_pts=num_pts, time_duration=time_duration, extension=args.extension, num_extra_pts=args.num_extra_pts, frame_ratio=args.frame_ratio, dataloader=args.dataloader)
+            scene_info = sceneLoadTypeCallbacks["Blender"](args.source_path, args.white_background, args.eval, num_pts=num_pts, time_duration=time_duration, extension=args.extension, num_extra_pts=args.num_extra_pts, frame_ratio=args.frame_ratio, dataloader=args.dataloader, pcd_init=pcd_init)
+        
+        elif os.path.exists(os.path.join(args.source_path, "cameras.txt")):
+            scene_info = sceneLoadTypeCallbacks["Enerf_outdoor"](args.source_path, args.white_background, args.eval, num_pts=num_pts, time_duration=time_duration, extension=args.extension, num_extra_pts=args.num_extra_pts, frame_ratio=args.frame_ratio, dataloader=args.dataloader, pcd_init=pcd_init)
+
         else:
             assert False, "Could not recognize scene type!"
 
@@ -83,6 +87,7 @@ class Scene:
             self.train_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.train_cameras, resolution_scale, args)
             print("Loading Test Cameras")
             self.test_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.test_cameras, resolution_scale, args)
+
 
             total_timestamp = []                                                            # 查询全部图片的时间戳
             for i in self.train_cameras[resolution_scale]:

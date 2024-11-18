@@ -9,8 +9,8 @@ exhaust_test: True
 
 ModelParams:
   sh_degree: 3
-  source_path: "data/N3V/cut_roasted_beef_MVS"
-  model_path: "output/N3V/cut_roasted_beef_MVS"
+  source_path: "data/enerf/actor1_4"
+  model_path: "output/enerf/actor1_4"
   images: "images"
   resolution: 1
   white_background: False
@@ -45,7 +45,7 @@ OptimizationParams:
   percent_dense: 0.01
   lambda_dssim: 0.2
   thresh_opa_prune: 0.005                 # thresh_opa_prune 0.005
-  densification_interval: 100             # densification_interval
+  densification_interval: 200             # densification_interval
   opacity_reset_interval: 30_000          # opacity_reset_interval
   densify_from_iter: 500
   densify_until_iter: 7_000               # densify_until_iter
