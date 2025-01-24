@@ -1,6 +1,6 @@
-# FS4DGS: Few-shot Dynamic Novel View Synthesis using Gaussian Splatting
+# Geometry-Consistent 4D Gaussian Splatting for Sparse Dynamic View Synthesis
 
-**This repository is the official implementation of "FS4DGS: Few-shot Dynamic Novel View Synthesis using Gaussian Splatting".** In this paper, we propose XXX.
+**This repository is the official implementation of "Geometry-Consistent 4D Gaussian Splatting for Sparse Dynamic View Synthesis".** In this paper, we propose XXX.
 
 ## Get started
 
@@ -17,7 +17,7 @@ conda activate fs4dgs
 
 ### Data preparation
 
-**DyNeRF dataset:**
+**N3DV dataset:**
 
 Download the [Neural 3D Video dataset](https://github.com/facebookresearch/Neural_3D_Video) and extract each scene to `data/N3V`. After that, preprocess the raw video by executing:
 
