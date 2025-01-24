@@ -6,12 +6,12 @@ rot_4d: True
 force_sh_3d: False
 batch_size: 4
 exhaust_test: True
-scale_factor: 2.0
+scale_factor: 1.0  
 
 ModelParams:
   sh_degree: 3
-  source_path: "data/technicolor/Train/3_views"
-  model_path: "output/technicolor/Train/3_views/MVS"
+  source_path: "data/dynerf/sear_steak/3_views_dust3r"
+  model_path: "output/dynerf/sear_steak/3_views/dust3r"
   images: "images"
   resolution: 1
   white_background: False
@@ -32,36 +32,36 @@ PipelineParams:                     # 修改PipelineParams时，arguments/__init
   eval_shfs_4d: True
 
 OptimizationParams:
-  iterations: 30_000
+  iterations: 10_000
   position_lr_init: 0.00016
   position_t_lr_init: -1.0
   position_lr_final: 0.0000016
   position_lr_delay_mult: 0.01
   position_lr_max_steps: 30_000
   feature_lr: 0.0025
-  opacity_lr: 0.01
-  scaling_lr: 0.001
-  rotation_lr: 0.0002
+  opacity_lr: 0.05
+  scaling_lr: 0.005
+  rotation_lr: 0.001
   percent_dense: 0.01
   lambda_dssim: 0.2
-  thresh_opa_prune: 0.005                 # thresh_opa_prune 0.005
-  densification_interval: 200             # densification_interval
-  opacity_reset_interval: 30_000          # opacity_reset_interval
+  thresh_opa_prune: 0.005                 
+  densification_interval: 200            
+  opacity_reset_interval: 30_000         
   densify_from_iter: 500
-  densify_until_iter: 15_000              # densify_until_iter
-  densify_grad_threshold: 0.0006          # densify_grad_threshold
-  densify_grad_t_threshold: 0.0006 / 40   # densify_grad_t_threshold
+  densify_until_iter: 6_000              
+  densify_grad_threshold: 0.0006         
+  densify_grad_t_threshold: 0.0006 / 40  
   densify_until_num_points: -1
   final_prune_from_iter: -1
   sh_increase_interval: 1000
   lambda_opa_mask: 0.0005
   lambda_rigid: 0.0
   lambda_motion: 0.0
-  dist_thres: 10                        # dist_thres
-  depth_ordinal_weight: 0.0           # depth_weight
+  dist_thres: 10                    
+  depth_ordinal_weight: 0.0      
   depth_patch_weight: 0.0
-  depth_mvs_weight: 0.0
-  start_sample_pseudo: 2500             # start_sample_pseudo
-  end_sample_pseudo: 5000               # end_sample_pseudo
-  sample_pseudo_interval: 10            # sample_pseudo_interval
-  depth_pseudo_weight: 0.010            # depth_pseudo_weight
+  depth_mvs_weight: 0.0            # depth_mvs_weight 0.02
+  start_sample_pseudo: 2500             
+  end_sample_pseudo: 5000              
+  sample_pseudo_interval: 10          
+  depth_pseudo_weight: 0.010           

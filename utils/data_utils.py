@@ -31,8 +31,12 @@ class CameraDataset(Dataset):
             else:
                 viewpoint_image *= torch.ones((1, viewpoint_cam.image_height, viewpoint_cam.image_width))
             
-            # dv2_depth_path = viewpoint_cam.image_path.replace("images", "depths").replace('.png', '_raw_depth.npy') # dynerf dataset
-            dv2_depth_path = viewpoint_cam.image_path.replace("images", "depths").replace('.png', '_mde_depth.npy') # technicolor dataset
+            path_parts = viewpoint_cam.image_path.split(os.sep)
+            path_parts[-3] = '3_views'
+            new_image_path = os.sep.join(path_parts)
+            dv2_depth_path = new_image_path.replace("images", "depths").replace('.png', '_mde_depth.npy')
+            # dv2_depth_path = viewpoint_cam.image_path.replace("images", "depths").replace('.png', '_mde_depth.npy') # dynerf/technicolor dataset
+            # dv2_depth_path = viewpoint_cam.image_path.replace("images_half", "depths").replace('.png', '_mde_depth.npy') # enerf dataset
             if os.path.exists(dv2_depth_path):
                 dv2_depth_array = np.load(dv2_depth_path)
                 viewpoint_dv2_depth = torch.from_numpy(dv2_depth_array)

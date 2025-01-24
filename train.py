@@ -35,9 +35,7 @@ from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 from torch.utils.data import DataLoader
 from torchmetrics.functional.regression import pearson_corrcoef
-import time
 
-# import torch.multiprocessing as mp
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -46,7 +44,7 @@ except ImportError:
     TENSORBOARD_FOUND = False
 
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint, debug_from,
-             gaussian_dim, time_duration, num_pts, num_pts_ratio, rot_4d, force_sh_3d, batch_size, pcd_init):
+             gaussian_dim, time_duration, num_pts, num_pts_ratio, rot_4d, force_sh_3d, batch_size, pcd_init, scale_factor):
     
     if dataset.frame_ratio > 1:
         time_duration = [time_duration[0] / dataset.frame_ratio,  time_duration[1] / dataset.frame_ratio]
@@ -87,8 +85,12 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     gaussians.env_map = env_map
         
     training_dataset = scene.getTrainCameras()  # 创建训练集对象和训练数据加载器
-    training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=12 if dataset.dataloader else 0, collate_fn=lambda x: x, drop_last=True, persistent_workers=True)
-     
+    # training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=12 
+    #                                  if dataset.dataloader else 0, collate_fn=lambda x: x, drop_last=True, persistent_workers=True)
+    
+    training_dataloader = DataLoader(training_dataset, batch_size=batch_size, shuffle=True, num_workers=12 
+                                     if dataset.dataloader else 0, collate_fn=lambda x: x, drop_last=True)
+
     iteration = first_iter
     pseudo_stack = None
     selectviews = []
@@ -108,7 +110,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             # Render
             if (iteration - 1) == debug_from:
                 pipe.debug = True
-            
+             
             batch_point_grad = []
             batch_visibility_filter = []
             batch_radii = []
@@ -118,7 +120,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 gt_image = gt_image_and_depth[0].cuda()
                 viewpoint_cam = viewpoint_cam.cuda()
 
-                render_pkg = render(viewpoint_cam, gaussians, pipe, background)     # 显存会发生变化
+                render_pkg = render(viewpoint_cam, gaussians, pipe, background, scale_factor)     # 显存会发生变化
                 image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
                 
                 # Image Loss
@@ -161,7 +163,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 gt_depth_2 = dv2_depth[depth_pixel_2[:, 0], depth_pixel_2[:, 1]]
                 
                 para = 1_000_000 
-                depth_loss_ordinal  = args.depth_ordinal_weight * l1_loss(torch.tanh(para * (depth_1 - depth_2)), torch.sign(gt_depth_1 - gt_depth_2))
+                depth_loss_ordinal  = args.depth_ordinal_weight * l1_loss(torch.sigmoid(para * (depth_1 - depth_2)), torch.relu(torch.sign(gt_depth_1 - gt_depth_2)))
+                # depth_loss_ordinal  = args.depth_ordinal_weight * l1_loss(torch.tanh(para * (depth_1 - depth_2)), torch.sign(gt_depth_1 - gt_depth_2))
 
                 loss += depth_loss_ordinal
 
@@ -211,16 +214,16 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 #         loss_scale = min((iteration - args.start_sample_pseudo) / 500., 1)
                 #         loss += loss_scale * args.depth_pseudo_weight * depth_loss_pseudo
 
-                # ###### opa mask Loss ######
-                # if opt.lambda_opa_mask > 0:
-                #     o = render_pkg['alpha'].clamp(1e-6, 1-1e-6)
-                #     sky = 1 - o
+                ###### opa mask Loss ######
+                if opt.lambda_opa_mask > 0:
+                    o = render_pkg['alpha'].clamp(1e-6, 1-1e-6)
+                    sky = 1 - o
 
-                #     Lopa_mask = (- sky * torch.log(1 - o)).mean()
+                    Lopa_mask = (- sky * torch.log(1 - o)).mean()
 
-                #     lambda_opa_mask = opt.lambda_opa_mask
-                #     Lopa = lambda_opa_mask * Lopa_mask
-                #     loss = loss + Lopa
+                    lambda_opa_mask = opt.lambda_opa_mask
+                    Lopa = lambda_opa_mask * Lopa_mask
+                    loss = loss + Lopa  
                 # ###### opa mask Loss ######
                 
                 # ###### rigid loss ######
@@ -238,12 +241,12 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 #     loss = loss + opt.lambda_rigid * Lrigid
                 # ########################
                 
-                # ###### motion loss ######
-                # if opt.lambda_motion > 0:
-                #     _, velocity = gaussians.get_current_covariance_and_mean_offset(1.0, gaussians.get_t + 0.1)
-                #     Lmotion = velocity.norm(p=2, dim=1).mean()
-                #     loss = loss + opt.lambda_motion * Lmotion
-                # ########################
+                ###### motion loss ######
+                if opt.lambda_motion > 0:
+                    _, velocity = gaussians.get_current_covariance_and_mean_offset(1.0, gaussians.get_t + 0.1)
+                    Lmotion = velocity.norm(p=2, dim=1).mean()
+                    loss = loss + opt.lambda_motion * Lmotion
+                ########################
 
                 loss = loss / batch_size
                 loss.backward()                     # 显存会发生变化
@@ -277,7 +280,16 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                         "Lssim": Lssim,
                         "Ldepth_ordinal": depth_loss_ordinal,
                         "Ldepth_patch": depth_loss_patch,
-                        "Ldepth_mvs": depth_loss_mvs}
+                        "Ldepth_mvs": depth_loss_mvs,
+                        "Lopa": Lopa}
+
+            # loss_dict = {"Ll1": Ll1,
+            #             "Lssim": Lssim,
+            #             "Ldepth_ordinal": depth_loss_ordinal,
+            #             "Ldepth_patch": depth_loss_patch,
+            #             "Ldepth_mvs": depth_loss_mvs,
+            #             "Lopa": Lopa,
+            #             "Lmotion": Lmotion}
 
             with torch.no_grad():
                 psnr_for_log = psnr(image, gt_image).mean().double()
@@ -386,8 +398,8 @@ def training_report(tb_writer, iteration, Ll1, Lssim, loss, l1_loss, elapsed, te
             #     tb_writer.add_scalar('train_loss_patches/depth_loss', loss_dict['Ldepth'].item(), iteration)
             # if "Ltv" in loss_dict:
             #     tb_writer.add_scalar('train_loss_patches/tv_loss', loss_dict['Ltv'].item(), iteration)
-            # if "Lopa" in loss_dict:
-            #     tb_writer.add_scalar('train_loss_patches/opa_loss', loss_dict['Lopa'].item(), iteration)
+            if "Lopa" in loss_dict:
+                tb_writer.add_scalar('train_loss_patches/opa_loss', loss_dict['Lopa'].item(), iteration)
             # if "Lptsopa" in loss_dict:
             #     tb_writer.add_scalar('train_loss_patches/pts_opa_loss', loss_dict['Lptsopa'].item(), iteration)
             # if "Lsmooth" in loss_dict:
@@ -400,6 +412,8 @@ def training_report(tb_writer, iteration, Ll1, Lssim, loss, l1_loss, elapsed, te
                 tb_writer.add_scalar('train_loss_patches/depth_loss_patch', loss_dict['Ldepth_patch'].item(), iteration)
             if "Ldepth_mvs" in loss_dict:
                 tb_writer.add_scalar('train_loss_patches/depth_loss_mvs', loss_dict['Ldepth_mvs'].item(), iteration)
+            if "Lmotion" in loss_dict:
+                tb_writer.add_scalar('train_loss_patches/motion_loss', loss_dict['Lmotion'].item(), iteration)
 
     psnr_test_iter = 0.0
     # Report test and samples of training set
@@ -465,7 +479,7 @@ if __name__ == "__main__":
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
     parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000, 30_000])
-    parser.add_argument("--save_iterations", nargs="+", type=int, default=[5_000, 7_000, 10_000, 20_000])
+    parser.add_argument("--save_iterations", nargs="+", type=int, default=[5_000, 7_000, 10_000, 14_500, 20_000, 25_000])
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--start_checkpoint", type=str, default = None)
     
@@ -478,7 +492,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--exhaust_test", action="store_true")
-    parser.add_argument("--pcd_init", type=str, default="COLMAP")
+    parser.add_argument("--pcd_init", type=str, default="MVS")
+    parser.add_argument("--scale_factor", type=float, default=1.0)
     
     args = parser.parse_args(sys.argv[1:])
     args.save_iterations.append(args.iterations)
@@ -506,7 +521,7 @@ if __name__ == "__main__":
 
     torch.autograd.set_detect_anomaly(args.detect_anomaly)  # 不启用计算图的异常监测
     training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations, args.start_checkpoint, args.debug_from,
-             args.gaussian_dim, args.time_duration, args.num_pts, args.num_pts_ratio, args.rot_4d, args.force_sh_3d, args.batch_size, args.pcd_init)
+             args.gaussian_dim, args.time_duration, args.num_pts, args.num_pts_ratio, args.rot_4d, args.force_sh_3d, args.batch_size, args.pcd_init, args.scale_factor)
 
     # All done
     print("\nTraining complete.")

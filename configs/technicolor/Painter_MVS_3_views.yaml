@@ -6,11 +6,12 @@ rot_4d: True
 force_sh_3d: False
 batch_size: 4
 exhaust_test: True
+scale_factor: 2.0
 
 ModelParams:
   sh_degree: 3
-  source_path: "data/technicolor/Train/3_views"
-  model_path: "output/technicolor/Train/3_views/COLMAP"
+  source_path: "data/technicolor/Painter/3_views"
+  model_path: "output/technicolor/Painter/3_views/MVS"
   images: "images"
   resolution: 1
   white_background: False
@@ -28,7 +29,6 @@ PipelineParams:                     # 修改PipelineParams时，arguments/__init
   debug: False
   env_map_res: 0
   env_optimize_until: 1000000000
-  env_optimize_from: 0
   eval_shfs_4d: True
 
 OptimizationParams:
@@ -54,14 +54,14 @@ OptimizationParams:
   densify_until_num_points: -1
   final_prune_from_iter: -1
   sh_increase_interval: 1000
-  lambda_opa_mask: 0.0000
+  lambda_opa_mask: 0.0005
   lambda_rigid: 0.0
   lambda_motion: 0.0
-  dist_thres: 10                        # dist_thres
-  depth_ordinal_weight: 0.020           # depth_weight
-  depth_patch_weight: 0.020
-  depth_mvs_weight: 0.02
-  start_sample_pseudo: 2500             # start_sample_pseudo
-  end_sample_pseudo: 5000               # end_sample_pseudo
-  sample_pseudo_interval: 10            # sample_pseudo_interval
-  depth_pseudo_weight: 0.010            # depth_pseudo_weight
+  dist_thres: 10                       
+  depth_ordinal_weight: 0.0               # depth_weight 0.05         
+  depth_patch_weight: 0.0                 # depth_patch_weight 0.020
+  depth_mvs_weight: 0.0                   # depth_mvs_weight 0.020
+  start_sample_pseudo: 2500           
+  end_sample_pseudo: 5000            
+  sample_pseudo_interval: 10          
+  depth_pseudo_weight: 0.010           

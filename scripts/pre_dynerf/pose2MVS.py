@@ -220,9 +220,53 @@ def rotmat(a, b):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser() 
-    parser.add_argument("path", default="", help="input path to the video")
+    parser.add_argument("--path", default="", help="input path to the video")
+    parser.add_argument("--train_views", default="15", help="number of training views")
+    parser.add_argument("--resolution", default="2", help="resolution of the images")
+    parser.add_argument("--scene", default="", help="scene of the dataset")
+    parser.add_argument("--colmap", default=False, help="whether to run colmap to obtain 3D points")
     args = parser.parse_args()
 
+    if args.scene == "cut_roasted_beef":
+        if args.train_views == "2":
+            train_views = [6, 14]
+        elif args.train_views == "3":
+            train_views = [5, 10, 15]
+        elif args.train_views == "4":
+            train_views = [4, 8, 13, 16]
+        elif args.train_views == "5":
+            train_views = [4, 6, 13, 15, 17]
+
+    elif args.scene == "coffee_martini":
+        if args.train_views == "2":
+            train_views = [5, 11]
+        elif args.train_views == "3":
+            train_views = [4, 9, 14]
+        elif args.train_views == "4":
+            train_views = [4, 6, 10, 14]
+        elif args.train_views == "5":
+            train_views = [4, 5, 13, 14, 15]
+    
+    elif args.scene == "flame_salmon":
+        if args.train_views == "2":
+            train_views = [6, 13]
+        elif args.train_views == "3":
+            train_views = [5, 9, 14]
+        elif args.train_views == "4":
+            train_views = [4, 8, 11, 15]
+        elif args.train_views == "5":
+            train_views = [4, 5, 13, 14, 15]
+    
+    else:
+        if args.train_views == "2":
+            train_views = [7, 14]
+        elif args.train_views == "3":
+            train_views = [5, 11, 16]
+        elif args.train_views == "4":
+            train_views = [4, 9, 12, 17]
+        elif args.train_views == "5":
+            train_views = [5, 7, 14, 16, 18]
+    
     # path must end with / to make sure image path is relative
     if args.path[-1] != '/':
         args.path += '/'
@@ -234,9 +278,8 @@ if __name__ == '__main__':
     
     for video in videos:
         cam_name = video.split('/')[-1].split('.')[-2]
-        do_system(f"ffmpeg -i {video} -vf scale=iw/2:ih/2 -t 10 -start_number 0 {images_path}/{cam_name}_%04d.png")  # 提取视频中的图片
-    # 为了降低def3dgs算法内存，将图片缩放为原来的1/2, 对应命令为 -vf scale=iw/2:ih/2
-    # load data
+        do_system(f"ffmpeg -i {video} -vf scale=iw/2:ih/2 -t 10 -start_number 0 {images_path}/{cam_name}_%04d.png") 
+
     images = [f[len(args.path):] for f in sorted(glob.glob(os.path.join(args.path, "images/", "*"))) if f.lower().endswith('png') or f.lower().endswith('jpg') or f.lower().endswith('jpeg')]
     cams = sorted(set([im[7:12] for im in images]))
     
@@ -249,7 +292,7 @@ if __name__ == '__main__':
 
     poses = poses_bounds[:, :15].reshape(-1, 3, 5) # (N, 3, 5)
     bounds = poses_bounds[:, -2:] # (N, 2)
-
+        
     H, W, fl = poses[0, :, -1]  /  2                   # 图片缩放为原来的1/2，对应的相机外参不变，内参变为原来的1/2。
 
     print(f'[INFO] H = {H}, W = {W}, fl = {fl}')
@@ -263,9 +306,6 @@ if __name__ == '__main__':
     
     train_frames = []
     test_frames = []
-    
-    time_colmap = []
-    time_colmap = [int(im.lstrip("/").split('.')[0][-4:]) / 30 for im in images if cams[0] in im]
 
     for i in range(N):
         cam_frames = [{'file_path': im.lstrip("/").split('.')[0], 
@@ -275,11 +315,7 @@ if __name__ == '__main__':
 
         if i == 0:
             test_frames += cam_frames
-            # train_frames += cam_frames
-        # else:                  
-        elif i == 5 or i == 7 or i == 16:                                                       # cook_spinack, flame_steak, sear_steak
-        # elif i == 4 or i == 6 or i == 15:                                                     # Cut_roasted_beef
-        # elif i == 4 or i == 5 or i == 13:                                                     # Coffee_martini & flame salmon 
+        elif i in train_views:
             train_frames += cam_frames
 
 
@@ -310,82 +346,84 @@ if __name__ == '__main__':
     with open(test_output_path, 'w') as f:
         json.dump(test_transforms, f, indent=2)
     
-    # for time in time_colmap:
+    # Colmap MVS
+    if args.colmap == "True":
         
-    #     colmap_workspace = os.path.join(args.path, 'tmp')
-    #     W, H, cx, cy, fx, fy = int(W), int(H), train_transforms['cx'], train_transforms['cy'], train_transforms['fl_x'], train_transforms['fl_y']
-    #     os.makedirs(os.path.join(colmap_workspace, 'created', 'sparse'), exist_ok=True)
+        colmap_workspace = os.path.join(args.path, 'tmp')
+        W, H, cx, cy, fx, fy = int(W), int(H), train_transforms['cx'], train_transforms['cy'], train_transforms['fl_x'], train_transforms['fl_y']
+        os.makedirs(os.path.join(colmap_workspace, 'created', 'sparse'), exist_ok=True)
         
-    #     fname2pose = {}
-    #     with open(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), 'w') as f:
-    #         f.write(f'1 PINHOLE {W} {H} {fx} {fy} {cx} {cy}')
-    #         for frame in train_frames:
-    #             if frame['time'] == time:
-    #                 fname = frame['file_path'].split('/')[-1] + '.png'
-    #                 pose = np.array(frame['transform_matrix'])
-    #                 fname2pose.update({fname: pose})
+        fname2pose = {}
+        with open(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), 'w') as f:
+            f.write(f'1 PINHOLE {W} {H} {fx} {fy} {cx} {cy}')
+            for frame in train_frames:
+                if frame['time'] == 0:
+                    fname = frame['file_path'].split('/')[-1] + '.png'
+                    pose = np.array(frame['transform_matrix'])
+                    fname2pose.update({fname: pose})
                     
-    #     os.makedirs(os.path.join(colmap_workspace, 'images'), exist_ok=True)
-    #     for fname in fname2pose.keys():
-    #         os.symlink(os.path.abspath(os.path.join(images_path, fname)), os.path.join(colmap_workspace, 'images', fname))
+        os.makedirs(os.path.join(colmap_workspace, 'images'), exist_ok=True)
+        for fname in fname2pose.keys():
+            os.symlink(os.path.abspath(os.path.join(images_path, fname)), os.path.join(colmap_workspace, 'images', fname))
                     
-    #     with open(os.path.join(colmap_workspace, 'created/sparse/images.txt'), 'w') as f:
-    #         idx = 1
-    #         for fname in fname2pose.keys():
-    #             pose = fname2pose[fname]
-    #             R = np.linalg.inv(pose[:3, :3])
-    #             T = -np.matmul(R, pose[:3, 3])
-    #             q0 = 0.5 * math.sqrt(1 + R[0, 0] + R[1, 1] + R[2, 2])
-    #             q1 = (R[2, 1] - R[1, 2]) / (4 * q0)
-    #             q2 = (R[0, 2] - R[2, 0]) / (4 * q0)
-    #             q3 = (R[1, 0] - R[0, 1]) / (4 * q0)
+        with open(os.path.join(colmap_workspace, 'created/sparse/images.txt'), 'w') as f:
+            idx = 1
+            for fname in fname2pose.keys():
+                pose = fname2pose[fname]
+                R = np.linalg.inv(pose[:3, :3])
+                T = -np.matmul(R, pose[:3, 3])
+                q0 = 0.5 * math.sqrt(1 + R[0, 0] + R[1, 1] + R[2, 2])
+                q1 = (R[2, 1] - R[1, 2]) / (4 * q0)
+                q2 = (R[0, 2] - R[2, 0]) / (4 * q0)
+                q3 = (R[1, 0] - R[0, 1]) / (4 * q0)
 
-    #             f.write(f'{idx} {q0} {q1} {q2} {q3} {T[0]} {T[1]} {T[2]} 1 {fname}\n\n')
-    #             idx += 1
+                f.write(f'{idx} {q0} {q1} {q2} {q3} {T[0]} {T[1]} {T[2]} 1 {fname}\n\n')
+                idx += 1
         
-    #     with open(os.path.join(colmap_workspace, 'created/sparse/points3D.txt'), 'w') as f:
-    #         f.write('')
+        with open(os.path.join(colmap_workspace, 'created/sparse/points3D.txt'), 'w') as f:
+            f.write('')
         
-    #     db_path = os.path.join(colmap_workspace, 'database.db')
+        db_path = os.path.join(colmap_workspace, 'database.db')
         
-    #     do_system(f"colmap feature_extractor \
-    #                 --database_path {db_path} \
-    #                 --image_path {os.path.join(colmap_workspace, 'images')}")
+        do_system(f"colmap feature_extractor \
+                    --database_path {db_path} \
+                    --image_path {os.path.join(colmap_workspace, 'images')}")
         
-    #     camTodatabase(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), db_path)
+        camTodatabase(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), db_path)
         
-    #     do_system(f"colmap exhaustive_matcher  \
-    #                 --database_path {db_path}")
+        do_system(f"colmap exhaustive_matcher  \
+                    --database_path {db_path}")
         
-    #     os.makedirs(os.path.join(colmap_workspace, 'triangulated', 'sparse'), exist_ok=True)
+        os.makedirs(os.path.join(colmap_workspace, 'triangulated', 'sparse'), exist_ok=True)
         
-    #     do_system(f"colmap point_triangulator   \
-    #                 --database_path {db_path} \
-    #                 --image_path {os.path.join(colmap_workspace, 'images')} \
-    #                 --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
-    #                 --output_path  {os.path.join(colmap_workspace, 'triangulated/sparse')}")
+        do_system(f"colmap point_triangulator   \
+                    --database_path {db_path} \
+                    --image_path {os.path.join(colmap_workspace, 'images')} \
+                    --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
+                    --output_path  {os.path.join(colmap_workspace, 'triangulated/sparse')}")
         
-    #     do_system(f"colmap model_converter \
-    #                 --input_path  {os.path.join(colmap_workspace, 'triangulated/sparse')} \
-    #                 --output_path  {os.path.join(colmap_workspace, 'created/sparse')} \
-    #                 --output_type TXT")
+        do_system(f"colmap model_converter \
+                    --input_path  {os.path.join(colmap_workspace, 'triangulated/sparse')} \
+                    --output_path  {os.path.join(colmap_workspace, 'created/sparse')} \
+                    --output_type TXT")
         
-    #     os.makedirs(os.path.join(colmap_workspace, 'dense'), exist_ok=True)
+        os.makedirs(os.path.join(colmap_workspace, 'dense'), exist_ok=True)
         
-    #     do_system(f"colmap image_undistorter  \
-    #                 --image_path  {os.path.join(colmap_workspace, 'images')} \
-    #                 --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
-    #                 --output_path  {os.path.join(colmap_workspace, 'dense')}")
+        do_system(f"colmap image_undistorter  \
+                    --image_path  {os.path.join(colmap_workspace, 'images')} \
+                    --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
+                    --output_path  {os.path.join(colmap_workspace, 'dense')}")
         
-    #     save_path = os.path.join(args.path, f'sparse/{round(time * 30):04d}')
-    #     source_path = os.path.join(colmap_workspace, 'dense/sparse')
-    #     os.makedirs(save_path)
-
-    #     for filename in os.listdir(source_path):
-    #         source_file = os.path.join(source_path, filename)
-    #         shutil.copy2(source_file, save_path)
+        do_system(f"colmap patch_match_stereo   \
+                    --workspace_path   {os.path.join(colmap_workspace, 'dense')}")
         
-    #     shutil.rmtree(colmap_workspace) 
-
+        do_system(f"colmap stereo_fusion    \
+                    --workspace_path {os.path.join(colmap_workspace, 'dense')} \
+                    --output_path {os.path.join(args.path, 'points3d_colmap.ply')}")
+        
+        shutil.rmtree(colmap_workspace)
+        os.remove(os.path.join(args.path, 'points3d_colmap.ply.vis'))
+        
+        print(f"[INFO] Initial point cloud is saved in {os.path.join(args.path, 'points3d_colmap.ply')}.")
 
 

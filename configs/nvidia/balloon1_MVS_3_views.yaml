@@ -6,12 +6,11 @@ rot_4d: True
 force_sh_3d: False
 batch_size: 4
 exhaust_test: True
-scale_factor: 2.0
 
 ModelParams:
   sh_degree: 3
-  source_path: "data/technicolor/Train/3_views"
-  model_path: "output/technicolor/Train/3_views/MVS"
+  source_path: "data/nvidia/balloon1/3_views"
+  model_path: "output/nvidia/balloon1/3_views/MVS"
   images: "images"
   resolution: 1
   white_background: False
@@ -29,10 +28,11 @@ PipelineParams:                     # 修改PipelineParams时，arguments/__init
   debug: False
   env_map_res: 0
   env_optimize_until: 1000000000
+  env_optimize_from: 0
   eval_shfs_4d: True
 
 OptimizationParams:
-  iterations: 30_000
+  iterations: 15_000
   position_lr_init: 0.00016
   position_t_lr_init: -1.0
   position_lr_final: 0.0000016
@@ -48,7 +48,7 @@ OptimizationParams:
   densification_interval: 200             # densification_interval
   opacity_reset_interval: 30_000          # opacity_reset_interval
   densify_from_iter: 500
-  densify_until_iter: 15_000              # densify_until_iter
+  densify_until_iter: 10_000              # densify_until_iter
   densify_grad_threshold: 0.0006          # densify_grad_threshold
   densify_grad_t_threshold: 0.0006 / 40   # densify_grad_t_threshold
   densify_until_num_points: -1
@@ -58,9 +58,9 @@ OptimizationParams:
   lambda_rigid: 0.0
   lambda_motion: 0.0
   dist_thres: 10                        # dist_thres
-  depth_ordinal_weight: 0.0           # depth_weight
-  depth_patch_weight: 0.0
-  depth_mvs_weight: 0.0
+  depth_ordinal_weight: 0.020           # depth_weight
+  depth_patch_weight: 0.020
+  depth_mvs_weight: 0.02
   start_sample_pseudo: 2500             # start_sample_pseudo
   end_sample_pseudo: 5000               # end_sample_pseudo
   sample_pseudo_interval: 10            # sample_pseudo_interval

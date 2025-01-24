@@ -6,11 +6,12 @@ rot_4d: True
 force_sh_3d: False
 batch_size: 4
 exhaust_test: True
+scale_factor: 1.0  
 
 ModelParams:
   sh_degree: 3
-  source_path: "data/N3V/flame_salmon_MVS"
-  model_path: "output/N3V/flame_salmon_MVS"
+  source_path: "data/dynerf/flame_salmon/2_views"
+  model_path: "output/dynerf/flame_salmon/2_views/MVS"
   images: "images"
   resolution: 1
   white_background: False
@@ -26,11 +27,8 @@ PipelineParams:                       # 修改PipelineParams时，arguments/__in
   convert_SHs_python: False
   compute_cov3D_python: False
   debug: False
-  # env_map_res: 500
-  # env_optimize_until: 5000
   env_map_res: 0
   env_optimize_until: 1000000000
-  env_optimize_from: 0
   eval_shfs_4d: True
 
 OptimizationParams:
@@ -46,21 +44,24 @@ OptimizationParams:
   rotation_lr: 0.001
   percent_dense: 0.01
   lambda_dssim: 0.2
-  thresh_opa_prune: 0.005                 # thresh_opa_prune 0.005
-  densification_interval: 100             # densification_interval
-  opacity_reset_interval: 30_000           # opacity_reset_interval
+  thresh_opa_prune: 0.005              
+  densification_interval: 100          
+  opacity_reset_interval: 30_000     
   densify_from_iter: 500
-  densify_until_iter: 7_000               # densify_until_iter
-  densify_grad_threshold: 0.0006          # densify_grad_threshold
-  densify_grad_t_threshold: 0.0006 / 40   # densify_grad_t_threshold
+  densify_until_iter: 7_000             
+  densify_grad_threshold: 0.0006      
+  densify_grad_t_threshold: 0.0006 / 40   
   densify_until_num_points: -1
   final_prune_from_iter: -1
   sh_increase_interval: 1000
-  lambda_opa_mask: 0.0
+  lambda_opa_mask: 0.0005
   lambda_rigid: 0.0
   lambda_motion: 0.0
-  depth_weight: 0.020                   # depth_weight        
-  start_sample_pseudo: 2500             # start_sample_pseudo
-  end_sample_pseudo: 5000              # end_sample_pseudo
-  sample_pseudo_interval: 5             # sample_pseudo_interval
-  depth_pseudo_weight: 0.01              # depth_pseudo_weight
+  dist_thres: 10                      
+  depth_ordinal_weight: 0.0           
+  depth_patch_weight: 0.0
+  depth_mvs_weight: 0.0             # depth_mvs_weight 0.02      
+  start_sample_pseudo: 2500            
+  end_sample_pseudo: 5000              
+  sample_pseudo_interval: 10           
+  depth_pseudo_weight: 0.010         

@@ -10,6 +10,8 @@ import math
 import shutil
 import sqlite3
 import csv
+from natsort import index_natsorted
+from utils.read_write_model import read_model, write_model
 
 
 IS_PYTHON3 = sys.version_info[0] >= 3
@@ -223,29 +225,21 @@ def rotmat(a, b):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser() 
     parser.add_argument("--path", default="", help="input path to the video")
-    parser.add_argument("--train_views", default="15", help="number of training views")
-    parser.add_argument("--resolution", default="2", help="resolution of the images")
-    parser.add_argument("--colmap", default=False, help="whether to run colmap to obtain 3D points")
     args = parser.parse_args()
-
-    test_view = [5]                                                          # Technicolor Dataset 测试的视角，cam10
-    if args.train_views == "15":                                            # Technicolor Dataset 训练的所有视角
-        train_views = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]
-    elif args.train_views == "3":                                           # Technicolor Dataset 训练的三个视角，cam02, cam08, cam15
-        train_views = [3, 8, 13]
 
     # path must end with / to make sure image path is relative
     if args.path[-1] != '/':
         args.path += '/'
-        
-    # extract images
-    videos = [os.path.join(args.path, vname) for vname in os.listdir(args.path) if vname.endswith(".mp4")]
-    images_path = os.path.join(args.path, "images/")
-    os.makedirs(images_path, exist_ok=True)
+
+    # obtain camerea.txt
+    bin_path = os.path.join(args.path, "sparse", "0")
+    cameras, images, points3D = read_model(bin_path, ".bin")
+    write_model(cameras, images, points3D, args.path, ".txt")
     
     # load image
-    images = [f[len(args.path):] for f in sorted(glob.glob(os.path.join(args.path, "images/", "*"))) if f.lower().endswith('png') or f.lower().endswith('jpg') or f.lower().endswith('jpeg')]
-    cams = sorted(set([im[7:12] for im in images]))
+    images = [f[len(args.path):] for f in sorted(glob.glob(os.path.join(args.path, "images_half/", "*"))) if f.lower().endswith('png') or f.lower().endswith('jpg') or f.lower().endswith('jpeg')]
+    cams = sorted(set([im[12:17] for im in images]))
+    images_path = os.path.join(args.path, "images_half/")
 
     # load poses and bounds
     poses_bounds = np.load(os.path.join(args.path, 'poses_bounds.npy')) # poses_bounds.npy文件保存相机位姿信息，N×17的矩阵，前面15个参数可以重排成3x5的矩阵形式：左边3x3矩阵是c2w的旋转矩阵R，第四列是c2w的平移向量T，前四列相当于相机外参；第五列分别是图像的高H、宽W和相机的焦距f（相机内参）（这部分是前15个参数）
@@ -255,8 +249,18 @@ if __name__ == '__main__':
     assert N == len(cams)
 
     poses = poses_bounds[:, :15].reshape(-1, 3, 5) # (N, 3, 5)
-    bounds = poses_bounds[:, -2:] # (N, 2)
-    H, W = poses[0, :, -1][0] / int(args.resolution), poses[0, :, -1][1] / int(args.resolution)
+
+    bounds = poses_bounds[:, -2:]   # (N, 2)
+
+    for i in range(N):
+        if i == 1:
+            bounds[i][0] *= 0.8
+        elif i == 5:
+            bounds[i][0] *= 0.8
+        elif i == 9:
+            bounds[i][0] *= 0.8
+
+    H, W = poses[0, :, -1][0] / 2, poses[0, :, -1][1] / 2 
     print(f'[INFO] H = {H}, W = {W}')
 
     # inversion of this: https://github.com/Fyusion/LLFF/blob/c6e27b1ee59cb18f054ccb0f87a90214dbe70482/llff/poses/pose_utils.py#L51
@@ -269,18 +273,15 @@ if __name__ == '__main__':
     # load camera intrinsics
     fx, fy, cx, cy = [], [], [], []
     
-    with open(os.path.join(args.path, "cameras_parameters.txt"), "r") as f:
+    with open(os.path.join(args.path, "cameras.txt"), "r") as f:
             reader = csv.reader(f, delimiter=" ")
-            for idx, row in enumerate(reader):
-                if idx == 0:
-                    continue
-                idx = idx - 1
-                row = [float(c) for c in row if c.strip() != '']
-
-                fx.append(row[0] / int(args.resolution))  
-                fy.append(row[0] / int(args.resolution)) 
-                cx.append(row[1] / int(args.resolution)) 
-                cy.append(row[2] / int(args.resolution))
+            data = list(reader)[3:]
+            sorted_data = sorted(data, key=lambda x: int(x[0]))
+            for idx, row in enumerate(sorted_data):
+                fx.append(float(row[4])/2)  
+                fy.append(float(row[5])/2) 
+                cx.append(float(row[6])/2) 
+                cy.append(float(row[7])/2)
     
     train_info = []
     test_info = []
@@ -291,19 +292,21 @@ if __name__ == '__main__':
     for i in range(N):
         cam_info = [{   'w': W,
                         'h': H,
-                        'fl_x': fx[i],
-                        'fl_y': fy[i],
-                        'cx': cx[i],
-                        'cy': cy[i],
+                        'fl_x': fx[0],
+                        'fl_y': fy[0],
+                        'cx': cx[0],
+                        'cy': cy[0],
                         'file_path': im.lstrip("/").split('.')[0], 
                         'transform_matrix': poses[i].tolist(),
                         'time': int(im.lstrip("/").split('.')[0][-4:]) / 30,                 # 调整每帧图片对应的时间戳
-                        'bounds': bounds[i].tolist()} for im in images if cams[i] in im]     # 添加一组参数bounds,为图像的最大最小深度值，用于计算相机的视锥体
+                        'bounds': bounds[i].tolist()} for im in images if cams[i] in im[12:17]]     # 添加一组参数bounds,为图像的最大最小深度值，用于计算相机的视锥体
 
-        if i in test_view:                                                                   
+        if i == 3:                                                                        
             test_info += cam_info
-                                          
-        elif i in train_views:                                                                     
+            
+
+        # else:
+        elif i in (1,5,9):                                                                 # nvidia 测试集
             train_info += cam_info
 
     train_transforms = {
@@ -321,87 +324,82 @@ if __name__ == '__main__':
     with open(test_output_path, 'w') as f:
         json.dump(test_transforms, f, indent=2)
 
-    # Colmap MVS
-    if args.colmap == "True":
-        colmap_workspace = os.path.join(args.path, 'tmp')
-        W, H = int(W), int(H)
-        os.makedirs(os.path.join(colmap_workspace, 'created', 'sparse'), exist_ok=True)
 
-        j = 1
+    # # Colmap MVS
+    # colmap_workspace = os.path.join(args.path, 'tmp')
+    # W, H = int(W), int(H)
+    # os.makedirs(os.path.join(colmap_workspace, 'created', 'sparse'), exist_ok=True)
 
-        with open(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), 'w') as f:
-            for i in range(N):
+    # j = 1
+
+    # with open(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), 'w') as f:
+    #     f.write(f'1 PINHOLE {W} {H} {fx[0]} {fy[0]} {cx[0]} {cy[0]} \n')
+    
+    # fname2pose = {}
+    # for frame in train_info:
+    #     if frame['time'] == 1:
+    #         fname = frame['file_path'].split('/')[-1] + '.png'
+    #         pose = np.array(frame['transform_matrix'])
+    #         fname2pose.update({fname: pose})
                 
-                if i in train_views:
-                    
-                    f.write(f'{j} PINHOLE {W} {H} {fx[i]} {fy[i]} {cx[i]} {cy[i]} \n')
-                    j += 1
-        
-        fname2pose = {}
-        for frame in train_info:
-            if frame['time'] == 0:
-                fname = frame['file_path'].split('/')[-1] + '.png'
-                pose = np.array(frame['transform_matrix'])
-                fname2pose.update({fname: pose})
-                    
-        os.makedirs(os.path.join(colmap_workspace, 'images'), exist_ok=True)
-        for fname in fname2pose.keys():
-            os.symlink(os.path.abspath(os.path.join(images_path, fname)), os.path.join(colmap_workspace, 'images', fname))
-                    
-        with open(os.path.join(colmap_workspace, 'created/sparse/images.txt'), 'w') as f:
-            idx = 1
-            for fname in fname2pose.keys():
-                pose = fname2pose[fname]
-                R = np.linalg.inv(pose[:3, :3])
-                T = -np.matmul(R, pose[:3, 3])
-                q0 = 0.5 * math.sqrt(1 + R[0, 0] + R[1, 1] + R[2, 2])
-                q1 = (R[2, 1] - R[1, 2]) / (4 * q0)
-                q2 = (R[0, 2] - R[2, 0]) / (4 * q0)
-                q3 = (R[1, 0] - R[0, 1]) / (4 * q0)
+    # os.makedirs(os.path.join(colmap_workspace, 'images'), exist_ok=True)
+    # for fname in fname2pose.keys():
+    #     os.symlink(os.path.abspath(os.path.join(images_path, fname)), os.path.join(colmap_workspace, 'images', fname))
+                
+    # with open(os.path.join(colmap_workspace, 'created/sparse/images.txt'), 'w') as f:
+    #     idx = 1
+    #     for fname in fname2pose.keys():
+    #         pose = fname2pose[fname]
+    #         R = np.linalg.inv(pose[:3, :3])
+    #         T = -np.matmul(R, pose[:3, 3])
+    #         q0 = 0.5 * math.sqrt(1 + R[0, 0] + R[1, 1] + R[2, 2])
+    #         q1 = (R[2, 1] - R[1, 2]) / (4 * q0)
+    #         q2 = (R[0, 2] - R[2, 0]) / (4 * q0)
+    #         q3 = (R[1, 0] - R[0, 1]) / (4 * q0)
 
-                f.write(f'{idx} {q0} {q1} {q2} {q3} {T[0]} {T[1]} {T[2]} {idx} {fname}\n\n')
-                idx += 1
-        
-        with open(os.path.join(colmap_workspace, 'created/sparse/points3D.txt'), 'w') as f:
-            f.write('')
-        
-        db_path = os.path.join(colmap_workspace, 'database.db')
-        
-        do_system(f"colmap feature_extractor \
-                    --database_path {db_path} \
-                    --image_path {os.path.join(colmap_workspace, 'images')}")
-        
-        camTodatabase(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), db_path)
-        
-        do_system(f"colmap exhaustive_matcher  \
-                    --database_path {db_path}")
-        
-        os.makedirs(os.path.join(colmap_workspace, 'triangulated', 'sparse'), exist_ok=True)
-        
-        do_system(f"colmap point_triangulator   \
-                    --database_path {db_path} \
-                    --image_path {os.path.join(colmap_workspace, 'images')} \
-                    --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
-                    --output_path  {os.path.join(colmap_workspace, 'triangulated/sparse')} \
-                    --Mapper.ba_global_function_tolerance 0.000001")
-        
-        do_system(f"colmap model_converter \
-                    --input_path  {os.path.join(colmap_workspace, 'triangulated/sparse')} \
-                    --output_path  {os.path.join(colmap_workspace, 'created/sparse')} \
-                    --output_type TXT")
-        
-        os.makedirs(os.path.join(colmap_workspace, 'dense'), exist_ok=True)
-        
-        do_system(f"colmap image_undistorter  \
-                    --image_path  {os.path.join(colmap_workspace, 'images')} \
-                    --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
-                    --output_path  {os.path.join(colmap_workspace, 'dense')}")
+    #         f.write(f'{idx} {q0} {q1} {q2} {q3} {T[0]} {T[1]} {T[2]} 1 {fname}\n\n')
+    #         idx += 1
+    
+    # with open(os.path.join(colmap_workspace, 'created/sparse/points3D.txt'), 'w') as f:
+    #     f.write('')
+    
+    # db_path = os.path.join(colmap_workspace, 'database.db')
+    
+    # do_system(f"colmap feature_extractor \
+    #             --database_path {db_path} \
+    #             --image_path {os.path.join(colmap_workspace, 'images')}")
+    
+    # camTodatabase(os.path.join(colmap_workspace, 'created/sparse/cameras.txt'), db_path)
+    
+    # do_system(f"colmap exhaustive_matcher  \
+    #             --database_path {db_path}")
+    
+    # os.makedirs(os.path.join(colmap_workspace, 'triangulated', 'sparse'), exist_ok=True)
+    
+    # do_system(f"colmap point_triangulator   \
+    #             --database_path {db_path} \
+    #             --image_path {os.path.join(colmap_workspace, 'images')} \
+    #             --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
+    #             --output_path  {os.path.join(colmap_workspace, 'triangulated/sparse')} \
+    #             --Mapper.ba_global_function_tolerance 0.000001")
+    
+    # do_system(f"colmap model_converter \
+    #             --input_path  {os.path.join(colmap_workspace, 'triangulated/sparse')} \
+    #             --output_path  {os.path.join(colmap_workspace, 'created/sparse')} \
+    #             --output_type TXT")
+    
+    # os.makedirs(os.path.join(colmap_workspace, 'dense'), exist_ok=True)
+    
+    # do_system(f"colmap image_undistorter  \
+    #             --image_path  {os.path.join(colmap_workspace, 'images')} \
+    #             --input_path  {os.path.join(colmap_workspace, 'created/sparse')} \
+    #             --output_path  {os.path.join(colmap_workspace, 'dense')}")
 
-        do_system(f"colmap patch_match_stereo   \
-                        --workspace_path   {os.path.join(colmap_workspace, 'dense')}")
+    # do_system(f"colmap patch_match_stereo   \
+    #                 --workspace_path   {os.path.join(colmap_workspace, 'dense')}")
 
-        do_system(f"colmap stereo_fusion    \
-                        --workspace_path {os.path.join(colmap_workspace, 'dense')} \
-                        --output_path {os.path.join(args.path,'points3d_colmap.ply')}")
-        
-        shutil.rmtree(colmap_workspace)
+    # do_system(f"colmap stereo_fusion    \
+    #                 --workspace_path {os.path.join(colmap_workspace, 'dense')} \
+    #                 --output_path {os.path.join(args.path,'points3d.ply')}")
+    
+    # shutil.rmtree(colmap_workspace)

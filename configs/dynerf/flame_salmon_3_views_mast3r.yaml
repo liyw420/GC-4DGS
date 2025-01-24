@@ -6,12 +6,12 @@ rot_4d: True
 force_sh_3d: False
 batch_size: 4
 exhaust_test: True
-scale_factor: 2.0
+scale_factor: 1.0 
 
 ModelParams:
   sh_degree: 3
-  source_path: "data/technicolor/Birthday/3_views"
-  model_path: "output/technicolor/Birthday/3_views/MVS"
+  source_path: "data/dynerf/flame_salmon/3_views_mast3r"
+  model_path: "output/dynerf/flame_salmon/3_views/mast3r"
   images: "images"
   resolution: 1
   white_background: False
@@ -21,9 +21,9 @@ ModelParams:
   num_extra_pts: 0
   loaded_pth: ""
   frame_ratio: 1
-  dataloader: True                  # dataloader改为False意味着加载GT图片用于估计GT深度图,此时需要修改utils/camera_utils.py的61-62行代码
+  dataloader: True                    # dataloader改为False意味着加载GT图片用于估计GT深度图,此时需要修改utils/camera_utils.py的61-62行代码
 
-PipelineParams:                     # 修改PipelineParams时，arguments/__init__.py中的PipelineParams对应部分也需要修改（运行render.py时）。
+PipelineParams:                       # 修改PipelineParams时，arguments/__init__.py中的PipelineParams对应部分也需要修改（运行render.py时）。
   convert_SHs_python: False
   compute_cov3D_python: False
   debug: False
@@ -32,7 +32,7 @@ PipelineParams:                     # 修改PipelineParams时，arguments/__init
   eval_shfs_4d: True
 
 OptimizationParams:
-  iterations: 30_000
+  iterations: 10_000
   position_lr_init: 0.00016
   position_t_lr_init: -1.0
   position_lr_final: 0.0000016
@@ -44,24 +44,24 @@ OptimizationParams:
   rotation_lr: 0.001
   percent_dense: 0.01
   lambda_dssim: 0.2
-  thresh_opa_prune: 0.005                
-  densification_interval: 200            
-  opacity_reset_interval: 30_000        
+  thresh_opa_prune: 0.005              
+  densification_interval: 200          
+  opacity_reset_interval: 30_000     
   densify_from_iter: 500
-  densify_until_iter: 8_800            
-  densify_grad_threshold: 0.0006          
+  densify_until_iter: 6_000             
+  densify_grad_threshold: 0.0006      
   densify_grad_t_threshold: 0.0006 / 40   
   densify_until_num_points: -1
   final_prune_from_iter: -1
   sh_increase_interval: 1000
   lambda_opa_mask: 0.0005
   lambda_rigid: 0.0
-  lambda_motion: 0.0                   # lambda_motion 0.02
-  dist_thres: 10                       
-  depth_ordinal_weight: 0.0           # depth_weight 0.05
-  depth_patch_weight: 0.0             # depth_patch_weight 0.020  
-  depth_mvs_weight: 0.0               # depth_mvs_weight 0.020
-  start_sample_pseudo: 2500             
+  lambda_motion: 0.0
+  dist_thres: 10                      
+  depth_ordinal_weight: 0.0           
+  depth_patch_weight: 0.0
+  depth_mvs_weight: 0.0            # depth_mvs_weight 0.02      
+  start_sample_pseudo: 2500            
   end_sample_pseudo: 5000              
   sample_pseudo_interval: 10           
-  depth_pseudo_weight: 0.010           
+  depth_pseudo_weight: 0.010         

@@ -68,14 +68,14 @@ class ModelParams(ParamGroup):
 
 class PipelineParams(ParamGroup):
     def __init__(self, parser):
-        self.convert_SHs_python = True
+        self.convert_SHs_python = False
         self.compute_cov3D_python = False
         self.debug = False
         self.env_map_res = 0
         self.env_optimize_until = 1000000000
         # self.env_map_res = 500
         # self.env_optimize_until = 5000
-        self.env_optimize_from = 0
+        self.entime_durationv_optimize_from = 0
         self.eval_shfs_4d = True
         super().__init__(parser, "Pipeline Parameters")
 

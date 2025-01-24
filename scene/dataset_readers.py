@@ -399,7 +399,7 @@ def readCamerasFromTransforms(path, transformsfile, white_background, extension=
         # # NeRF 'transform_matrix' is a camera-to-world transform
         c2w = np.array(frame["transform_matrix"])
         # # change from OpenGL/Blender camera axes (Y up, Z back) to COLMAP (Y down, Z forward)
-        c2w[:3, 1:3] *= -1
+        # c2w[:3, 1:3] *= -1
 
         # # get the world-to-camera transform and set R, T
         w2c = np.linalg.inv(c2w)
@@ -486,7 +486,7 @@ def readNerfSyntheticInfo(path, white_background, eval, extension=".png", num_pt
     nerf_normalization = getNerfppNorm(train_cam_infos)
     if pcd_init == "COLMAP":
         ply_path = os.path.join(path, "points3d_colmap.ply")
-    elif pcd_init == "MVS":
+    elif pcd_init == "MVS" or "dust3r":
         ply_path = os.path.join(path, "points3d_mvs.ply")
 
     try:

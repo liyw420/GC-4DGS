@@ -225,9 +225,10 @@ def fixbroken(imagepath, refimagepath):
 if __name__ == "__main__" :
     scenenamelist = ["Train"]
     framerangedict = {}
-    framerangedict["Birthday"] = [_ for _ in range(151, 201)] # start from 1
-    framerangedict["Fabien"] = [_ for _ in range(51, 101)] # start from 1
-    framerangedict["Painter"] = [_ for _ in range(100, 150)] # start from 0
+    framerangedict["Birthday"] = [_ for _ in range(100, 150)] # start from 1
+    # framerangedict["Fabien"] = [_ for _ in range(51, 101)] # start from 1
+    framerangedict["Remy"] = [_ for _ in range(51, 101)] # start from 1
+    framerangedict["Painter"] = [_ for _ in range(51, 101)] # start from 0
     framerangedict["Theater"] = [_ for _ in range(51, 101)] # start from 1
     framerangedict["Train"] = [_ for _ in range(151, 201)] # start from 1
     

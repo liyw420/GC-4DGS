@@ -18,7 +18,7 @@ from gaussian_renderer import render
 import torchvision
 from utils.general_utils import safe_state
 from argparse import ArgumentParser
-from arguments import ModelParams, PipelineParams, get_combined_args
+from arguments import ModelParams, PipelineParams, OptimizationParams, get_combined_args
 from utils.pose_utils import generate_spiral_path_4dgs
 from utils.graphics_utils import getWorld2View2
 from utils.general_utils import vis_depth
@@ -27,6 +27,7 @@ import numpy as np
 import cv2
 import open3d as o3d
 from scripts.pre_dynerf.n3v2blender import closest_point_2_lines, rotmat
+import time
 
 def render_set(model_path, train_or_test, loaded_pth, views, gaussians, pipeline, background):
     
@@ -39,10 +40,15 @@ def render_set(model_path, train_or_test, loaded_pth, views, gaussians, pipeline
         makedirs(render_path, exist_ok=True)
         makedirs(gts_path, exist_ok=True)
         makedirs(depth_path, exist_ok=True)
+        t_all = []
 
         for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
+
+            start = time.time()
             output = render(view[1].cuda(), gaussians, pipeline, background)                   # 渲染输出
-            
+            end = time.time()
+            t_all.append(end - start)
+
             rendered_image = output["render"]
             gt = view[0][0][0:3, :, :]                                                         # Ground Truth图片
             torchvision.utils.save_image(rendered_image, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
@@ -60,6 +66,10 @@ def render_set(model_path, train_or_test, loaded_pth, views, gaussians, pipeline
                 pcd.points = o3d.utility.Vector3dVector(mean3d)
                 # pcd.colors = o3d.utility.Vector3dVector(colors)
                 o3d.io.write_point_cloud(os.path.join(model_path, train_or_test, model_name,"pcd.ply"), pcd)
+            
+        FPS = 1 / (sum(t_all) / len(t_all))
+        print(f"FPS: {FPS}")
+
     else:
         model_name = loaded_pth.split('/')[-1].split('.')[0]
         render_path = os.path.join(model_path, train_or_test, model_name, "renders")
@@ -145,7 +155,7 @@ def render_video(source_path, model_path, loaded_pth, views, gaussians, pipeline
         final_video.write(video_img)
 
         depth = rendering ["depth"]
-        depth_map = vis_depth(depth[0].detach().cpu().numpy())
+        depth_map = vis_depth(depth[0].detach().cpu().numpy()) 
         cv2.imwrite(os.path.join(depth_path,'{0:05d}'.format(idx) + ".png"), depth_map)
 
     final_video.release()
@@ -153,8 +163,8 @@ def render_video(source_path, model_path, loaded_pth, views, gaussians, pipeline
 def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParams, skip_train : bool, skip_test : bool,
                 skip_pseudo:bool, skip_video: bool, mode: str, pcd_init: str):
     with torch.no_grad():
-        gaussians = GaussianModel(dataset.sh_degree, gaussian_dim=4, time_duration=[0.0, 8.0], rot_4d=True, force_sh_3d=False, sh_degree_t=2 if pipeline.eval_shfs_4d else 0)
-        scene = Scene(dataset, gaussians, num_pts=300000, num_pts_ratio=1.0, time_duration=[0.0, 8.0], shuffle=False, pcd_init = pcd_init)
+        gaussians = GaussianModel(dataset.sh_degree, gaussian_dim=4, time_duration=[0.0, 10.0], rot_4d=True, force_sh_3d=False, sh_degree_t=2 if pipeline.eval_shfs_4d else 0)
+        scene = Scene(dataset, gaussians, num_pts=300000, num_pts_ratio=1.0, time_duration=[0.0, 10.0], shuffle=False, pcd_init = pcd_init)
 
         bg_color = [1,1,1] if dataset.white_background else [0, 0, 0]   # background is black
         background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
@@ -172,8 +182,8 @@ def render_sets(dataset : ModelParams, iteration : int, pipeline : PipelineParam
         # else:
         #     render_func = interpolate_all
 
-        if not skip_train:
-             render_func(dataset.model_path, "train", dataset.loaded_pth, scene.getTrainCameras(), gaussians, pipeline, background)
+        # if not skip_train:
+        #      render_func(dataset.model_path, "train", dataset.loaded_pth, scene.getTrainCameras(), gaussians, pipeline, background)
 
         if not skip_test:
             render_func(dataset.model_path, "test", dataset.loaded_pth, scene.getTestCameras(), gaussians, pipeline, background)
@@ -189,6 +199,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Testing script parameters")
     model = ModelParams(parser, sentinel=True)
     pipeline = PipelineParams(parser)
+    op = OptimizationParams(parser)
     parser.add_argument("--iteration", default=-1, type=int)
     parser.add_argument("--skip_train", action="store_true")
     parser.add_argument("--skip_test", action="store_true")

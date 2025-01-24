@@ -35,7 +35,7 @@ class CameraInfo:
     FovX: np.array
     image: np.array
     depth: np.array
-    bounds: np.array                            # 添加一组参数bounds,为图像的最大最小深度值，用于计算相机的视锥体
+    bounds: np.array                            
     image_path: str
     image_name: str
     width: int
@@ -64,7 +64,7 @@ def readCamerasFromTransforms2(path, transformsfile, white_background, extension
         idx = idx_frame[0]
         frame = idx_frame[1]
         timestamp = frame.get('time', 0.0)
-        bounds = np.array(frame['bounds'])              # 添加一组参数bounds,为图像的最大最小深度值，用于计算相机的视锥体
+        bounds = np.array(frame['bounds'])              
         if frame_ratio > 1:
             timestamp /= frame_ratio
         if time_duration is not None and 'time' in frame:
@@ -127,7 +127,7 @@ def readCamerasFromTransforms2(path, transformsfile, white_background, extension
                         image_path=image_path, image_name=image_name, width=width, height=height, timestamp=timestamp,
                         fl_x=fl_x, fl_y=fl_y, cx=cx, cy=cy)
     
-    with ThreadPool() as pool:      # 使用 map 方法将 frame_read_fn 函数应用到 frames 列表中的每个元素。
+    with ThreadPool() as pool:      
         cam_infos = pool.map(frame_read_fn, zip(list(range(len(frames))), frames)) 
         pool.close()
         pool.join()
@@ -149,7 +149,7 @@ def readCamerasFromTransforms(path, transformsfile, white_background, extension=
         idx = idx_frame[0]
         frame = idx_frame[1]
         timestamp = frame.get('time', 0.0)
-        bounds = np.array(frame['bounds'])              # 添加一组参数bounds,为图像的最大最小深度值，用于计算相机的视锥体
+        bounds = np.array(frame['bounds'])             
         if frame_ratio > 1:
             timestamp /= frame_ratio
         if time_duration is not None and 'time' in frame:
@@ -212,7 +212,7 @@ def readCamerasFromTransforms(path, transformsfile, white_background, extension=
                         image_path=image_path, image_name=image_name, width=width, height=height, timestamp=timestamp,
                         fl_x=fl_x, fl_y=fl_y, cx=cx, cy=cy)
     
-    with ThreadPool() as pool:      # 使用 map 方法将 frame_read_fn 函数应用到 frames 列表中的每个元素。
+    with ThreadPool() as pool:      
         cam_infos = pool.map(frame_read_fn, zip(list(range(len(frames))), frames)) 
         pool.close()
         pool.join()
@@ -225,7 +225,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser() 
     parser.add_argument("--path", default="", help="input path to the camera parameters")
     parser.add_argument("--mvs_config", default="", help="")
-    parser.add_argument("--dataset", default="", help="dynerf, techicolor,immersive")
+    parser.add_argument("--dataset", default="", help="dynerf, techicolor, enerf_outdoor")
     parser.add_argument("--resolution", default="", help="")
 
     args = parser.parse_args()

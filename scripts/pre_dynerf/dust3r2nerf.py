@@ -18,7 +18,7 @@ def do_system(arg):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser() 
-	parser.add_argument("path", default="", help="input path to the video")
+	parser.add_argument("--path", default="", help="input path to the video")
 	args = parser.parse_args()
 
 	# path must end with / to make sure image path is relative
@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
 	# load camera intrinsics and extrinsics
 	scale = 2704 / 512 / 2
-	outdir = '/media/vincent/HDD-02/fs4dgs/data/N3V/cut_roasted_beef_sparse_view_dust3r'
+	outdir = args.path
 	intrinsics = np.load(os.path.join(outdir, 'intrinsics.npy'))
 	focals = np.load(os.path.join(outdir, 'focals.npy'))
 	extrinsics = np.load(os.path.join(outdir, 'extrinsics.npy'))
