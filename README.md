@@ -3,9 +3,7 @@
 **This repository is the official implementation of "Geometry-Consistent 4D Gaussian Splatting for Sparse-Input Dynamic View Synthesis".** In this paper, we introduce Geometry-Consistent 4D Gaussian Splatting (GC-4DGS), a novel DVS framework to achieve real-time high-fidelity dynamic scene rendering from sparse input views.
 
 ## Pipeline
-
 <img width="1621" height="710" alt="image" src="https://github.com/user-attachments/assets/9dcfed0f-e53b-494a-9ff4-efbf589d58e6" />
-
 
 ## Get started
 
@@ -61,6 +59,10 @@ bash ./scripts/pre_technicolor/run_train_eval.sh
 ### Video Demos
 
 **N3DV dataset:**
+
+
+https://github.com/user-attachments/assets/f2671fa4-0e6f-460e-b664-1d74a7386ecb
+
 
 
 
