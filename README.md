@@ -60,11 +60,9 @@ bash ./scripts/pre_technicolor/run_train_eval.sh
 ```
 ### 🎥 Video Demos
 
-**N3DV dataset:**
+See `./demos/`.
 
-<div align="center">
-  <video src="https://github.com/liyw420/GC-4DGS/blob/main/demos/N3DV/coffee_martini/TestView_CoffeeMartini_3TrainingViews_Depth.mp4" controls width="80%"></video>
-</div>
+
 
 
 
