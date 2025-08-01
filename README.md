@@ -32,7 +32,7 @@ python scripts/n3v2blender.py data/N3V/$scene_name
 
 **Technicolor dataset:**
 
-Please reach out to the authors of the paper "Dataset and Pipeline for Multi-View Light-Field Video" for access to the Technicolor dataset. </br> Our codebase expects the following directory structure for this dataset before preprocessing:
+Please reach out to the authors of the paper [Dataset and Pipeline for Multi-View Light-Field Video](https://openaccess.thecvf.com/content_cvpr_2017_workshops/w27/papers/Sabater_Dataset_and_Pipeline_CVPR_2017_paper.pdf) for access to the Technicolor dataset. </br> Our codebase expects the following directory structure for this dataset before preprocessing:
 ```
 <location>
 |---Fabien
