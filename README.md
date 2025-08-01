@@ -59,9 +59,10 @@ bash ./scripts/pre_technicolor/run_train_eval.sh
 ### Video Demos
 
 **N3DV dataset:**
+https://github.com/user-attachments/assets/2f505116-7461-497b-bbdc-dea6b32f87bf
 
 
-https://github.com/user-attachments/assets/f2671fa4-0e6f-460e-b664-1d74a7386ecb
+
 
 
 
