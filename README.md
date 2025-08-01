@@ -58,3 +58,17 @@ For data preprocessing, model training, rendering, and evaluation on Technicolor
 ```
 bash ./scripts/pre_technicolor/run_train_eval.sh
 ```
+### Video Demos
+
+**N3DV dataset:**
+
+https://github.com/user-attachments/assets/2ca6a2ad-7c89-4212-aecd-d62caa2f3731
+
+https://github.com/user-attachments/assets/3ff84372-dd2c-4e3c-9594-0a8e3bd5fa59
+
+
+
+
+
+
+
