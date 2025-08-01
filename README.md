@@ -44,7 +44,7 @@ Download the official pretrained [MVSFormer](https://github.com/ewrfcas/MVSForme
 
 **DepthAnythingV2:**
 
-We use the [Depth-Anything-V2-Large for metric depth estimation](https://github.com/DepthAnything/Depth-Anything-V2/tree/main/metric_depth), which is finetuned on indoor scenes (Hypersim). Clone the repository to `./utils/DV2`.
+We use [Depth-Anything-V2-Large for metric depth estimation](https://github.com/DepthAnything/Depth-Anything-V2/tree/main/metric_depth), which is finetuned on indoor scenes (Hypersim). Clone the repository to `./utils/DV2`.
 
 ### Running
 
