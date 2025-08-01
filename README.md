@@ -1,6 +1,6 @@
-# Geometry-Consistent 4D Gaussian Splatting for Sparse Dynamic View Synthesis
+# Geometry-Consistent 4D Gaussian Splatting for Sparse-Input Dynamic View Synthesis
 
-**This repository is the official implementation of "Geometry-Consistent 4D Gaussian Splatting for Sparse Dynamic View Synthesis".**
+**This repository is the official implementation of "Geometry-Consistent 4D Gaussian Splatting for Sparse-Input Dynamic View Synthesis".**
 
 ## Get started
 
