@@ -28,7 +28,7 @@ Download the [Neural 3D Video dataset](https://github.com/facebookresearch/Neura
 
 **Technicolor dataset:**
 
-Please reach out to the authors of the paper [Dataset and Pipeline for Multi-View Light-Field Video](https://openaccess.thecvf.com/content_cvpr_2017_workshops/w27/papers/Sabater_Dataset_and_Pipeline_CVPR_2017_paper.pdf) for access to the Technicolor dataset. </br> Our codebase expects the following directory structure for this dataset before preprocessing:
+Please reach out to the authors of the paper [Dataset and Pipeline for Multi-View Light-Field Video](https://openaccess.thecvf.com/content_cvpr_2017_workshops/w27/papers/Sabater_Dataset_and_Pipeline_CVPR_2017_paper.pdf) for access to the Technicolor dataset. Please extract each scene to `./data/technicolor`. Our codebase expects the following directory structure for this dataset before preprocessing:
 ```
 <location>
 |---Fabien
@@ -48,12 +48,12 @@ We use the [Depth-Anything-V2-Large for metric depth estimation](https://github.
 
 ### Running
 
-For data preprocessing, model training and evaluation on N3DV Dataset:
+For data preprocessing, model training, rendering, and evaluation on N3DV Dataset:
 
 ```
 bash ./scripts/pre_dynerf/run_train_eval.sh
 ```
-For data preprocessing, model training and evaluation on Technicolor Dataset:
+For data preprocessing, model training, rendering, and evaluation on Technicolor Dataset:
 
 ```
 bash ./scripts/pre_technicolor/run_train_eval.sh
