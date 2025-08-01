@@ -1,4 +1,4 @@
-name: fs4dgs
+name: gc4dgs
 channels:
   - pytorch
   - conda-forge
