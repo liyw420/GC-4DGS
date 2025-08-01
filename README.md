@@ -24,11 +24,7 @@ conda activate gc4dgs
 
 **N3DV dataset:**
 
-Download the [Neural 3D Video dataset](https://github.com/facebookresearch/Neural_3D_Video) and extract each scene to `data/N3V`. After that, preprocess the raw video by executing:
-
-```shell
-python scripts/n3v2blender.py data/N3V/$scene_name
-```
+Download the [Neural 3D Video dataset](https://github.com/facebookresearch/Neural_3D_Video) and extract each scene to `./data/N3V`.
 
 **Technicolor dataset:**
 
@@ -40,16 +36,25 @@ Please reach out to the authors of the paper [Dataset and Pipeline for Multi-Vie
 |   |---Fabien_undist_<.....>_<..>.png
 |---Birthday
 ```
+### Download Pretrained Models
 
-**Training:**
+**MVSFormer:**
+
+Download the official pretrained [MVSFormer](https://github.com/ewrfcas/MVSFormer) weights (MVSFormer.zip and MVSFormer-Blended.zip) from the [official link](https://onedrive.live.com/?redeem=aHR0cHM6Ly8xZHJ2Lm1zL3UvcyFBaDJWa1VMbWtpcVByeUhfVGwyUFVTNklzODMxP2U9QmdDdU9Z&id=8F2A92E64291951D%216049&cid=8F2A92E64291951D). Extract the pretrained models to `./mvs_modules/pretrained/`.
+
+**DepthAnythingV2:**
+
+We use the [Depth-Anything-V2-Large for metric depth estimation](https://github.com/DepthAnything/Depth-Anything-V2/tree/main/metric_depth), which is finetuned on indoor scenes (Hypersim). Clone the repository to `./utils/DV2`.
+
+### Running
+
+For data preprocessing, model training and evaluation on N3DV Dataset:
+
 ```
-python train.py --config configs/<dataset>/<scene_name>_MVS.yaml
+bash ./scripts/pre_dynerf/run_train_eval.sh
 ```
-**Rendering:**
+For data preprocessing, model training and evaluation on Technicolor Dataset:
+
 ```
-python render.py --model_path output/<dataset>/<scene_name>/ --loaded_pth output/<dataset>/<scene_name>/chkpnt_best.pth
-```
-**Evaluation:**
-```
-python metrics.py --model_path output/<dataset>/<scene_name>/
+bash ./scripts/pre_technicolor/run_train_eval.sh
 ```
