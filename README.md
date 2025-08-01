@@ -58,7 +58,7 @@ For data preprocessing, model training, rendering, and evaluation on Technicolor
 ```
 bash ./scripts/pre_technicolor/run_train_eval.sh
 ```
-### 🎥 Video Demos
+## 🎥 Video Demos
 
 To view the video demonstrations properly, please download them from the `./demos/` directory. Thank you.
 
