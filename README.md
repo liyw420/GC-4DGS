@@ -60,7 +60,7 @@ bash ./scripts/pre_technicolor/run_train_eval.sh
 ```
 ## 🎥 Video Demos
 
-To view the video demonstrations properly, please download them from the `./demos/` directory. Thank you.
+To view the video demonstrations properly, please **download** them from the `./demos/` directory. Thanks for your understanding.
 
 
 
