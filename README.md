@@ -1,6 +1,6 @@
 # GC-4DGS: Geometry-Consistent 4D Gaussian Splatting for Sparse-Input Dynamic View Synthesis
 
-### [Project Page](https://) | [Paper](https://)
+### [Project Page](https://) | Paper
 
 *Yiwei Li*,
 [*Jiannong Cao*](https://www4.comp.polyu.edu.hk/~csjcao/),
