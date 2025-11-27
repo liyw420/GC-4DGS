@@ -1,12 +1,21 @@
 # GC-4DGS: Geometry-Consistent 4D Gaussian Splatting for Sparse-Input Dynamic View Synthesis
 
+*Yiwei Li*,
+[*Jiannong Cao*](https://www4.comp.polyu.edu.hk/~csjcao/),
+[*Penghui Ruan*](https://pr-ryan.github.io/),
+[*Divya Saxena**](https://divvyasaxena.github.io/Divya-Saxena/),
+[*Songye Zhu*](https://www.zhusongye.com/),
+[*Yinfeng Cao**](https://cyfaaa.github.io/)
+
 **This repository is the official implementation of "Geometry-Consistent 4D Gaussian Splatting for Sparse-Input Dynamic View Synthesis".** In this paper, we introduce Geometry-Consistent 4D Gaussian Splatting (GC-4DGS), a novel DVS framework to achieve real-time high-fidelity dynamic scene rendering from sparse input views.
 
+---
 ## 🛠️ Pipeline
 <div align="center">
   <img src="assets/pipeline.png"/>
 </div><br/>
 
+---
 ## 🌟 Get started
 
 ### Environment
@@ -58,10 +67,13 @@ For data preprocessing, model training, rendering, and evaluation on Technicolor
 ```
 bash ./scripts/pre_technicolor/run_train_eval.sh
 ```
-## 🎥 Video Demos
+---
 
-To view the video demonstrations properly, please **download** them from the `./demos/` directory (click the **Download file** option on the top right corner). Thanks for your understanding.
+## 🙏 Acknowledgements
 
+GC-4DGS builds upon the original [4D Gaussian Splatting](https://github.com/fudan-zvg/4d-gaussian-splatting) codebase, and uses the pretrained [MVSFormer](https://github.com/ewrfcas/MVSFormer) and [Depth-Anything-V2-Large](https://github.com/DepthAnything/Depth-Anything-V2/tree/main/metric_depth) for point clouds and depth estimation. Besides, we thank all authors from [STG](https://github.com/oppo-us-research/SpacetimeGaussians), [4DGaussians](https://github.com/hustvl/4DGaussians), and [E-D3DGS](https://github.com/JeongminB/E-D3DGS) for presenting such excellent works.
+
+---
 
 
 
