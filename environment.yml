@@ -305,4 +305,3 @@ dependencies:
       - widgetsnbextension==4.0.13
       - yacs==0.1.8
       - zipp==3.20.2
-prefix: /home/vincent/ProgramFiles/miniconda3/envs/fudan4dgs
