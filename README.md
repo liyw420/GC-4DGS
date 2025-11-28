@@ -2,7 +2,7 @@
 
 ### [Project Page](https://) | Paper
 
-*Yiwei Li*,
+[*Yiwei Li*](https://scholar.google.com/citations?user=RYUlClcAAAAJ&hl=en),
 [*Jiannong Cao*](https://www4.comp.polyu.edu.hk/~csjcao/),
 [*Penghui Ruan*](https://pr-ryan.github.io/),
 [*Divya Saxena**](https://divvyasaxena.github.io/Divya-Saxena/),
