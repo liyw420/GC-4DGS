@@ -35,7 +35,7 @@ conda activate gc4dgs
 
 **N3DV dataset:**
 
-Download the [Neural 3D Video dataset](https://github.com/facebookresearch/Neural_3D_Video) and extract each scene to `./data/N3V`.
+Download the [Neural 3D Video dataset](https://github.com/facebookresearch/Neural_3D_Video) and extract each scene to `./data/dynerf`.
 
 **Technicolor dataset:**
 
